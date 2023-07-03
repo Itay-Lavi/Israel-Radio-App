@@ -21,12 +21,13 @@ class _DetailPlayerState extends State<DetailPlayer> {
         color: color);
   }
 
-  void showSnackBar(BuildContext context) {
+  void showErrorSnackBar(BuildContext context,
+      [String text = 'שגיאת אינטרנט']) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       behavior: SnackBarBehavior.floating,
       backgroundColor: Theme.of(context).colorScheme.error,
-      content: const Text(
-        'שגיאת אינטרנט',
+      content: Text(
+        text,
         textAlign: TextAlign.center,
         textDirection: TextDirection.rtl,
       ),
@@ -47,14 +48,14 @@ class _DetailPlayerState extends State<DetailPlayer> {
         child: Column(
           children: [
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              _iconButtonWidget(context, Icons.skip_previous, Colors.white, 45,
-                  () {
-                try {
-                  channelsProvider.moveChannels(-1);
-                } catch (err) {
-                  showSnackBar(context);
-                }
-              }),
+              _iconButtonWidget(
+                  context,
+                  Icons.skip_previous,
+                  Colors.white,
+                  45,
+                  () => channelsProvider
+                      .moveChannels(-1)
+                      .onError((__, _) => showErrorSnackBar(context))),
               const SizedBox(width: 10),
               channelsProvider.playerLoading
                   ? const Padding(
@@ -66,22 +67,19 @@ class _DetailPlayerState extends State<DetailPlayer> {
                           ? Icons.pause_circle
                           : Icons.play_circle,
                       Theme.of(context).colorScheme.secondary,
-                      70, () async {
-                      try {
-                        await channelsProvider.playOrPause();
-                      } catch (err) {
-                        showSnackBar(context);
-                      }
-                    }),
+                      70,
+                      () => channelsProvider
+                          .playOrPause()
+                          .onError((__, _) => showErrorSnackBar(context))),
               const SizedBox(width: 10),
-              _iconButtonWidget(context, Icons.skip_next, Colors.white, 45,
-                  () async {
-                try {
-                  await channelsProvider.moveChannels(1);
-                } catch (err) {
-                  showSnackBar(context);
-                }
-              }),
+              _iconButtonWidget(
+                  context,
+                  Icons.skip_next,
+                  Colors.white,
+                  45,
+                  () => channelsProvider
+                      .playOrPause()
+                      .onError((__, _) => showErrorSnackBar(context))),
             ]),
             const VolumeSlider(),
           ],

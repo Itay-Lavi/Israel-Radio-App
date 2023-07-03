@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/day_schedule.dart';
-import '../providers/channels_provider.dart';
+import '../../providers/day_schedule.dart';
+import '../../providers/channels_provider.dart';
 import 'schedule_timepicker.dart';
 
 // ignore: must_be_immutable

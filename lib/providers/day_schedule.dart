@@ -105,10 +105,12 @@ class DaysSchedule with ChangeNotifier {
       DateTime date = DateTime.now();
       String weekdayNow = DateFormat('EEEE').format(date).toString();
 
+      final bool isTimeMatch = selectedTime == deviceTime;
+
       for (int i = 0; i < _days.length; i++) {
         if ((_days[i].checked == true) &
             (weekdayNow == _days[i].backendDay) &
-            (selectedTime == deviceTime)) {
+            isTimeMatch) {
           VolumeController().setVolume(scheduleVol);
           if (!channelsProvider.play) {
             channelsProvider.playOrPause();

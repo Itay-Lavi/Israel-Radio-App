@@ -1,20 +1,14 @@
 import 'dart:async';
-import 'dart:collection';
-import 'dart:convert';
 
 import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 
 import '../models/channel.dart';
+import '../services/channels_api.dart';
 
 class ChannelsProvider with ChangeNotifier {
-  final String _imagesBaseUrl = "https://firebasestorage.googleapis.com/v0/b/"
-      "israelradio-87ac7"
-      ".appspot.com/o/radioImages%2F";
-
-  final AssetsAudioPlayer _radioPlayer = AssetsAudioPlayer.withId('1');
+  final AssetsAudioPlayer _radioPlayer = AssetsAudioPlayer.withId('id');
   late Channel loadedChannel;
   bool _channelIsInit = false;
   bool _playerLoading = false;
@@ -22,16 +16,40 @@ class ChannelsProvider with ChangeNotifier {
 
   List<Channel> _channels = [];
 
-  List<Channel> get channels {
-    return [..._channels]; //.toList()
+  List<Channel> get channels => _channels.toList();
+
+  List<Channel> get favoriteItems =>
+      _channels.where((chanItem) => chanItem.isFavorite).toList();
+
+  bool get playerLoading => _playerLoading;
+
+  Channel findById(int id) => _channels.firstWhere((chan) => chan.id == id);
+
+  Future<void> initData() async {
+    await fetchChannels();
+
+    final prefs = await SharedPreferences.getInstance();
+    for (Channel channel in _channels) {
+      final favoriteKey = 'favorite${channel.id}';
+      if (prefs.getBool(favoriteKey) == true) {
+        channel.isFavorite = prefs.getBool(favoriteKey)!;
+      }
+    }
+
+    final int? data = prefs.getInt('channel');
+    if (data != null) {
+      loadedChannel = findById(data);
+    } else {
+      loadedChannel = _channels[0]; //set channel to first channel;
+    }
+
+    isPlayingTimer();
+    notifyListeners();
   }
 
-  List<Channel> get favoriteItems {
-    return [..._channels.where((chanItem) => chanItem.isFavorite)];
-  }
-
-  Channel findById(int id) {
-    return _channels.firstWhere((chan) => chan.id == id);
+  Future<void> fetchChannels() async {
+    final fetchedChannels = await ChannelsApi.fetchChannels();
+    _channels = fetchedChannels;
   }
 
   void updatePlayerLoading(bool loading) {
@@ -39,23 +57,19 @@ class ChannelsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  bool get playerLoading {
-    return _playerLoading;
-  }
-
   Future<void> playOrPause() async {
-    try {
-      updatePlayerLoading(true);
-      if (!_channelIsInit) {
-        await setChannel(loadedChannel);
-        _channelIsInit = true;
-      }
-      await _radioPlayer.playOrPause();
-    } catch (e) {
-      updatePlayerLoading(false);
-      rethrow;
+    updatePlayerLoading(true);
+    if (!_channelIsInit) {
+      await setChannel(loadedChannel);
     }
-    updatePlayerLoading(false);
+    try {
+      await _radioPlayer.playOrPause().timeout(const Duration(seconds: 8));
+    } catch (e) {
+      _radioPlayer.stop();
+      return Future.error(e);
+    } finally {
+      updatePlayerLoading(false);
+    }
   }
 
   Future<void> setChannel(Channel data, [bool autoPlay = false]) async {
@@ -65,27 +79,31 @@ class ChannelsProvider with ChangeNotifier {
     loadedChannel = data;
 
     try {
-      await _radioPlayer.open(
-          Audio.liveStream(
-            data.radioUrl,
-            metas: Metas(
-                title: data.title, image: MetasImage.network(data.imageUrl)),
-          ),
-          autoStart: autoPlay ? true : play,
-          playInBackground: PlayInBackground.enabled,
-          showNotification: true,
-          notificationSettings: const NotificationSettings(
-              playPauseEnabled: true,
-              stopEnabled: true,
-              nextEnabled: false,
-              prevEnabled: false,
-              seekBarEnabled: false));
-      //שומר את המידע
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('channel', loadedChannel.id);
-    } catch (err) {
-      rethrow;
+      await _radioPlayer
+          .open(
+              Audio.liveStream(
+                data.radioUrl,
+                metas: Metas(
+                    title: data.title,
+                    image: MetasImage.network(data.imageUrl)),
+              ),
+              autoStart: autoPlay ? true : play,
+              playInBackground: PlayInBackground.enabled,
+              showNotification: true,
+              notificationSettings: const NotificationSettings(
+                  playPauseEnabled: true,
+                  stopEnabled: true,
+                  nextEnabled: false,
+                  prevEnabled: false,
+                  seekBarEnabled: false))
+          .timeout(const Duration(seconds: 8));
+    } catch (e) {
+      _radioPlayer.stop();
+      return Future.error(e);
+    } finally {
+      updatePlayerLoading(false);
     }
+    loadedChannel.saveLoadedChannel();
 
     _channelIsInit = true;
     notifyListeners();
@@ -104,75 +122,9 @@ class ChannelsProvider with ChangeNotifier {
       loaded = findById(nextChannel);
     }
 
-    try {
-      updatePlayerLoading(true);
-      await setChannel(loaded);
-      updatePlayerLoading(false);
-    } catch (e) {
-      updatePlayerLoading(false);
-      rethrow;
-    }
-  }
-
-  Future<void> initData() async {
-    try {
-      await fetchChannels();
-    } catch (error) {
-      return Future.error(error);
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    for (var channel in _channels) {
-      if (prefs.getBool('favorite${channel.id}') == true) {
-        channel.isFavorite = prefs.getBool('favorite${channel.id}')!;
-      }
-    }
-
-    final int? data = prefs.getInt('channel');
-    if (data != null) {
-      loadedChannel = findById(data);
-    } else {
-      loadedChannel = _channels[0];
-    }
-    isPlayingTimer();
-    notifyListeners();
-  }
-
-  Future<void> fetchChannels() async {
-    Uri url = Uri.https('pastebin.com', '/raw/dz7qLi5B');
-
-    final response = await http.get(url);
-
-    //If the http request is successful the statusCode will be 200
-    if (response.statusCode == 200) {
-      final extractedData =
-          json.decode(response.body) as Map<String, dynamic>; //decode to map
-
-      final sortedData = SplayTreeMap.from(
-          extractedData,
-          (a, b) => extractedData[a]['id']
-              .compareTo(extractedData[b]['id'])); //Sorting data by id
-
-      final List<Channel> channelsFetch =
-          []; //create a copy if function get exception
-
-      sortedData.forEach((prodId, prodData) {
-        //add fetched radio list
-        try {
-          final imageUrl = "${_imagesBaseUrl + prodData['imageUrl']}?alt=media";
-
-          channelsFetch.add(Channel(
-              id: prodData['id'],
-              title: prodData['title'],
-              radioUrl: prodData['radioUrl'],
-              imageUrl: imageUrl));
-          // ignore: empty_catches
-        } catch (e) {}
-      });
-      _channels = channelsFetch;
-    } else {
-      return Future.error('SocketException');
-    }
+    updatePlayerLoading(true);
+    await setChannel(loaded);
+    updatePlayerLoading(false);
   }
 
   void isPlayingTimer() {

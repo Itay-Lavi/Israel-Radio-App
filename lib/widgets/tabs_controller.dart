@@ -24,11 +24,11 @@ class TabsController extends StatelessWidget {
             preferredSize: Size.fromHeight(90),
             child: AppBar(
               bottom: TabBar(
-                tabs: [
+                tabs: const [
                   Tab(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         Text('כל התחנות'),
                         SizedBox(width: 10),
                         Icon(Icons.radio),
@@ -38,7 +38,7 @@ class TabsController extends StatelessWidget {
                   Tab(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
+                      children: [
                         Text('מעודפים'),
                         SizedBox(width: 10),
                         Icon(Icons.favorite),

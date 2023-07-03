@@ -15,11 +15,16 @@ class Channel with ChangeNotifier {
       required this.imageUrl,
       this.isFavorite = false});
 
-  Future<void> toggleFavoriteStatus(int id) async {
+  Future<void> toggleFavoriteStatus() async {
     isFavorite = !isFavorite;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('favorite$id', isFavorite);
     // print('favorite$id $isFavorite');
     notifyListeners();
+  }
+
+  Future<void> saveLoadedChannel() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('channel', id);
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:provider/provider.dart';
 
+import 'config/foreground_task.dart';
 import 'screens/detail_player_screen.dart';
 import './widgets/tabs_controller.dart';
 
@@ -37,9 +38,8 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(
               fontFamily: 'Lato',
               iconTheme: const IconThemeData(color: Colors.white),
-              primarySwatch: Colors.indigo,
-              // ignore: deprecated_member_use
-              accentColor: Colors.white),
+              colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.indigo)
+                  .copyWith(secondary: Colors.white)),
           home: const TabsController(),
           routes: {
             DetailPlayerScreen.routeName: (ctx) => const DetailPlayerScreen()
@@ -52,26 +52,8 @@ class MyApp extends StatelessWidget {
 
 Future<void> _initForegroundTask() async {
   FlutterForegroundTask.init(
-    androidNotificationOptions: AndroidNotificationOptions(
-      channelId: 'israel_radio_timer',
-      channelName: "רדיו ישראל",
-      channelDescription: "שעון רדיו מעורר רץ ברקע",
-      channelImportance: NotificationChannelImportance.LOW,
-      priority: NotificationPriority.LOW,
-      iconData: const NotificationIconData(
-        resType: ResourceType.mipmap,
-        resPrefix: ResourcePrefix.ic,
-        name: 'background_icon',
-      ),
-    ),
-    iosNotificationOptions: const IOSNotificationOptions(
-      showNotification: true,
-      playSound: false,
-    ),
-    foregroundTaskOptions: const ForegroundTaskOptions(
-      interval: 5000,
-      autoRunOnBoot: true,
-      allowWifiLock: true,
-    ),
+    androidNotificationOptions: androidNotificationOptions,
+    iosNotificationOptions: iosNotificationOptions,
+    foregroundTaskOptions: foregroundTaskOptions,
   );
 }
