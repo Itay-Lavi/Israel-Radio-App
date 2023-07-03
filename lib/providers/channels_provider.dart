@@ -8,7 +8,7 @@ import '../models/channel.dart';
 import '../services/channels_api.dart';
 
 class ChannelsProvider with ChangeNotifier {
-  final AssetsAudioPlayer _radioPlayer = AssetsAudioPlayer.withId('id');
+  final _radioPlayer = AssetsAudioPlayer.withId('1');
   late Channel loadedChannel;
   bool _channelIsInit = false;
   bool _playerLoading = false;
@@ -26,7 +26,11 @@ class ChannelsProvider with ChangeNotifier {
   Channel findById(int id) => _channels.firstWhere((chan) => chan.id == id);
 
   Future<void> initData() async {
-    await fetchChannels();
+    try {
+      await fetchChannels();
+    } catch (e) {
+      return Future.error(e);
+    }
 
     final prefs = await SharedPreferences.getInstance();
     for (Channel channel in _channels) {
@@ -65,7 +69,7 @@ class ChannelsProvider with ChangeNotifier {
     try {
       await _radioPlayer.playOrPause().timeout(const Duration(seconds: 8));
     } catch (e) {
-      _radioPlayer.stop();
+      await _radioPlayer.stop();
       return Future.error(e);
     } finally {
       updatePlayerLoading(false);
@@ -87,7 +91,7 @@ class ChannelsProvider with ChangeNotifier {
                     title: data.title,
                     image: MetasImage.network(data.imageUrl)),
               ),
-              autoStart: autoPlay ? true : play,
+              autoStart: false,
               playInBackground: PlayInBackground.enabled,
               showNotification: true,
               notificationSettings: const NotificationSettings(
@@ -97,16 +101,16 @@ class ChannelsProvider with ChangeNotifier {
                   prevEnabled: false,
                   seekBarEnabled: false))
           .timeout(const Duration(seconds: 8));
+      if (autoPlay || play) {
+        await _radioPlayer.play().timeout(const Duration(seconds: 8));
+      }
     } catch (e) {
-      _radioPlayer.stop();
+      await _radioPlayer.stop();
       return Future.error(e);
     } finally {
-      updatePlayerLoading(false);
+      _channelIsInit = true;
+      loadedChannel.saveLoadedChannel();
     }
-    loadedChannel.saveLoadedChannel();
-
-    _channelIsInit = true;
-    notifyListeners();
   }
 
   Future<void> moveChannels(int direction) async {
@@ -123,7 +127,7 @@ class ChannelsProvider with ChangeNotifier {
     }
 
     updatePlayerLoading(true);
-    await setChannel(loaded);
+    await setChannel(loaded, true);
     updatePlayerLoading(false);
   }
 

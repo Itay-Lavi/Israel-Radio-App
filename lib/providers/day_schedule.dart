@@ -100,7 +100,7 @@ class DaysSchedule with ChangeNotifier {
   }
 
   void timer(ChannelsProvider channelsProvider) {
-    scheduleTimer = Timer.periodic(const Duration(seconds: 7), (mytimer) {
+    scheduleTimer = Timer.periodic(const Duration(seconds: 60), (mytimer) {
       TimeOfDay deviceTime = TimeOfDay.now();
       DateTime date = DateTime.now();
       String weekdayNow = DateFormat('EEEE').format(date).toString();

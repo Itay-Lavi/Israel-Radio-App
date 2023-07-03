@@ -3,40 +3,28 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mini_music_visualizer/mini_music_visualizer.dart';
 
-import '../screens/detail_player_screen.dart';
-import '../models/channel.dart';
-import '../providers/channels_provider.dart';
+import '../../providers/ui_provider.dart';
+import '../../screens/detail_player_screen.dart';
+import '../../models/channel.dart';
+import '../../providers/channels_provider.dart';
 
 // ignore: must_be_immutable
 class ChannelsBottomPlayer extends StatelessWidget {
   ChannelsBottomPlayer({Key? key}) : super(key: key);
 
-  void showSnackBar(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: Theme.of(context).colorScheme.error,
-      content: const Text(
-        'שגיאת אינטרנט',
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.rtl,
-      ),
-      duration: const Duration(seconds: 4),
-    ));
-  }
-
   late List<Channel> channelsList;
 
   @override
   Widget build(BuildContext context) {
-    final channelsProvider = Provider.of<ChannelsProvider>(context);
+    final channelsProvider = context.watch<ChannelsProvider>();
+    final uiProvider = context.read<UiProvider>();
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: GestureDetector(
-        onTap: channelsProvider.playerLoading
-            ? null
-            : () => Navigator.of(context).pushNamed(
-                  DetailPlayerScreen.routeName,
-                ),
+        onTap: () => Navigator.of(context).pushNamed(
+          DetailPlayerScreen.routeName,
+        ),
         child: Card(
           margin: const EdgeInsets.only(bottom: 3),
           elevation: 8,
@@ -59,7 +47,7 @@ class ChannelsBottomPlayer extends StatelessWidget {
                           try {
                             await channelsProvider.playOrPause();
                           } catch (err) {
-                            showSnackBar(context);
+                            uiProvider.showErrorToast();
                           }
                         },
                         icon: Icon(channelsProvider.play

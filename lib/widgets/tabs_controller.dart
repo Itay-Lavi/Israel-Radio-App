@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:radio_timer_app/providers/ui_provider.dart';
 
 import '../providers/channels_provider.dart';
 import '../providers/day_schedule.dart';
@@ -13,8 +14,8 @@ class TabsController extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final channels = Provider.of<ChannelsProvider>(context, listen: false);
-    Provider.of<DaysSchedule>(context, listen: false).initData(channels);
+    final channels = context.read<ChannelsProvider>();
+    context.read<DaysSchedule>().initData(channels);
 
     return DefaultTabController(
         length: 2,
@@ -23,38 +24,49 @@ class TabsController extends StatelessWidget {
           appBar: PreferredSize(
             preferredSize: Size.fromHeight(90),
             child: AppBar(
-              bottom: TabBar(
-                tabs: const [
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('כל התחנות'),
-                        SizedBox(width: 10),
-                        Icon(Icons.radio),
-                      ],
+                bottom: TabBar(
+                  tabs: const [
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('כל התחנות'),
+                          SizedBox(width: 10),
+                          Icon(Icons.radio),
+                        ],
+                      ),
                     ),
-                  ),
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('מעודפים'),
-                        SizedBox(width: 10),
-                        Icon(Icons.favorite),
-                      ],
+                    Tab(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('מעודפים'),
+                          SizedBox(width: 10),
+                          Icon(Icons.favorite),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              title: const Text(
-                'רדיו ישראל',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-              centerTitle: true,
-              // leading: IconButton( onPressed: () {},icon: Icon(Icons.settings,size: 27,)),
-            ),
+                  ],
+                ),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                title: const Text(
+                  'רדיו ישראל',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                centerTitle: true,
+                leading: Consumer<UiProvider>(
+                  builder: (ctx, uiProvider, _) {
+                    uiProvider.initViewType();
+                    return IconButton(
+                        onPressed: uiProvider.switchViewType,
+                        icon: Icon(
+                          uiProvider.viewType == ViewType.list
+                              ? Icons.grid_on
+                              : Icons.list_alt,
+                          size: 27,
+                        ));
+                  },
+                )),
           ),
           body: Stack(children: [
             Container(

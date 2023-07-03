@@ -2,35 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import '../models/channel.dart';
-import '../providers/channels_provider.dart';
+import '../../models/channel.dart';
+import '../../providers/channels_provider.dart';
 
 class ChannelsListItem extends StatelessWidget {
   final bool showingFavorite;
-  final Function showSnackBar;
-  const ChannelsListItem(this.showingFavorite, this.showSnackBar, {Key? key})
+  final Function onChannelClick;
+
+  const ChannelsListItem(this.showingFavorite, this.onChannelClick, {Key? key})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final channelData = Provider.of<Channel>(context, listen: false);
-    final channelsProvider =
-        Provider.of<ChannelsProvider>(context, listen: false);
-
-    void onChannelClick() async {
-      try {
-        if (channelsProvider.loadedChannel != channelData) {
-          channelsProvider.updatePlayerLoading(true);
-          await channelsProvider.setChannel(channelData, true);
-          channelsProvider.updatePlayerLoading(false);
-        }
-      } catch (e) {
-        showSnackBar();
-      }
-    }
+    final channelData = context.read<Channel>();
+    final channelsProvider = context.read<ChannelsProvider>();
 
     return GestureDetector(
-      onTap: channelsProvider.playerLoading ? null : onChannelClick,
+      onTap: channelsProvider.playerLoading
+          ? null
+          : () => onChannelClick(channelData),
       child: SizedBox(
         height: showingFavorite ? 120 : 85,
         child: Card(
@@ -42,20 +32,21 @@ class ChannelsListItem extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Consumer<Channel>(builder: (_, channel, child) {
-                  return IconButton(
-                    icon: channel.isFavorite
-                        ? const Icon(
-                            Icons.favorite,
-                            color: Colors.red,
-                            size: 28,
-                          )
-                        : const Icon(
-                            Icons.favorite_border,
-                            color: Colors.black54,
-                            size: 28,
-                          ),
-                    onPressed: () => channel.toggleFavoriteStatus(),
-                  );
+                  return Stack(children: [
+                    IconButton(
+                        icon: channel.isFavorite
+                            ? const Icon(
+                                Icons.favorite,
+                                color: Colors.red,
+                                size: 28,
+                              )
+                            : const Icon(
+                                Icons.favorite_border,
+                                color: Colors.black54,
+                                size: 28,
+                              ),
+                        onPressed: channelData.toggleFavoriteStatus),
+                  ]);
                 }),
                 Expanded(
                   child: Text(

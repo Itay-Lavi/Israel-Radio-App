@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:provider/provider.dart';
+import 'package:radio_timer_app/providers/ui_provider.dart';
 
 import 'config/foreground_task.dart';
 import 'screens/detail_player_screen.dart';
@@ -30,6 +31,7 @@ class MyApp extends StatelessWidget {
         providers: [
           ChangeNotifierProvider(create: (ctx) => DaysSchedule()),
           ChangeNotifierProvider(create: (ctx) => TimerProvider()),
+          ChangeNotifierProvider(create: (ctx) => UiProvider()),
           ChangeNotifierProvider(create: (ctx) => ChannelsProvider()),
         ],
         child: MaterialApp(

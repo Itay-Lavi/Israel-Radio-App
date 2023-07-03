@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../providers/channels_provider.dart';
 
 import 'channels_screen.dart';
-import '../widgets/channels_bottom_player.dart';
+import '../widgets/player/channels_bottom_player.dart';
 
 class TabsScreen extends StatefulWidget {
   final ChannelsProvider channels;
@@ -18,19 +18,6 @@ class _TabsScreenState extends State<TabsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    void showSnackBar() {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Theme.of(context).colorScheme.error,
-        content: const Text(
-          'שגיאת אינטרנט',
-          textAlign: TextAlign.center,
-          textDirection: TextDirection.rtl,
-        ),
-        duration: const Duration(seconds: 4),
-      ));
-    }
-
     return Stack(children: [
       Container(
         decoration: BoxDecoration(
@@ -59,10 +46,10 @@ class _TabsScreenState extends State<TabsScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : Stack(
                     children: [
-                      TabBarView(
+                      const TabBarView(
                         children: [
-                          ChannelsList(false, showSnackBar), //כל התחנות
-                          ChannelsList(true, showSnackBar), //מעודפים
+                          ChannelsList(false), //כל התחנות
+                          ChannelsList(true), //מעודפים
                         ],
                       ),
                       Container(
