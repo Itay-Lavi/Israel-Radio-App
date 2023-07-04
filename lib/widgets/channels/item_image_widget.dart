@@ -13,7 +13,8 @@ class ItemImageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FadeInImage(
+    return SizedBox.expand(
+        child: FadeInImage(
       fadeInDuration: const Duration(milliseconds: 1000),
       fadeInCurve: Curves.easeIn,
       image: CachedNetworkImageProvider(
@@ -25,6 +26,6 @@ class ItemImageWidget extends StatelessWidget {
             image: AssetImage('assets/images/Radio-Placeholder.png'));
       },
       fit: BoxFit.cover,
-    );
+    ));
   }
 }
