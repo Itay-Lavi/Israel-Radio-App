@@ -115,6 +115,7 @@ class ChannelsProvider with ChangeNotifier {
 
   Future<void> moveChannels(int direction) async {
     // +1 = forward , -1 = backward
+    if (_playerLoading) return;
     Channel loaded;
 
     final int nextChannel = _channels.indexOf(loadedChannel) + direction;
