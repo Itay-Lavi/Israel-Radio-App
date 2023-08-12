@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/channel.dart';
 
+const placeholderPath = 'assets/images/Radio-Placeholder.png';
+
 class ItemImageWidget extends StatelessWidget {
   const ItemImageWidget({
     Key? key,
@@ -20,10 +22,9 @@ class ItemImageWidget extends StatelessWidget {
       image: CachedNetworkImageProvider(
         channelData.imageUrl,
       ),
-      placeholder: const AssetImage('assets/images/Radio-Placeholder.png'),
+      placeholder: const AssetImage(placeholderPath),
       imageErrorBuilder: (_, __, ___) {
-        return const Image(
-            image: AssetImage('assets/images/Radio-Placeholder.png'));
+        return const Image(image: AssetImage(placeholderPath));
       },
       fit: BoxFit.cover,
     ));
