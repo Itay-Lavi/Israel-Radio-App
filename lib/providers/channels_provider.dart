@@ -67,7 +67,7 @@ class ChannelsProvider with ChangeNotifier {
       await setChannel(loadedChannel);
     }
     try {
-      await _radioPlayer.playOrPause().timeout(const Duration(seconds: 8));
+      await _radioPlayer.playOrPause().timeout(const Duration(seconds: 12));
     } catch (e) {
       await _radioPlayer.stop();
       return Future.error(e);
@@ -82,6 +82,7 @@ class ChannelsProvider with ChangeNotifier {
     }
     loadedChannel = data;
 
+    print('setting channel');
     try {
       await _radioPlayer
           .open(

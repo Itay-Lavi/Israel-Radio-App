@@ -22,7 +22,7 @@ class TimerProvider with ChangeNotifier {
       if (time > 0) {
         time--;
       } //using else will skip if time gets zero
-      if (time == 0) {
+      else if (time == 0) {
         timerRunning = false;
         timer.cancel();
         if (channelsProvider.play) {

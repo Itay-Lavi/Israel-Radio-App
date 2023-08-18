@@ -1,26 +1,21 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_alarm_background_trigger/flutter_alarm_background_trigger.dart';
+import 'package:optimize_battery/optimize_battery.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:volume_controller/volume_controller.dart';
+import 'package:wakelock/wakelock.dart';
 
 import './channels_provider.dart';
 import '../models/day.dart';
-
-void startCallback() {
-  // The setTaskHandler function must be called to handle the task in the background.
-  // FlutterForegroundTask.setTaskHandler();
-}
 
 class DaysSchedule with ChangeNotifier {
   bool timerRunning = false;
   bool scheduleSwitch = false;
   double scheduleVol = 0.5;
   TimeOfDay selectedTime = TimeOfDay.now();
-  Timer? scheduleTimer;
-  //bool _foregroundServiceRunning = false;
+  final alarmPlugin = FlutterAlarmBackgroundTrigger();
 
   final List<DayItem> _days = [
     DayItem(0, 'א', 'Sunday', true),
@@ -36,13 +31,11 @@ class DaysSchedule with ChangeNotifier {
     return [..._days];
   }
 
-  Future<void> initData(ChannelsProvider channelsList) async {
-    //Initialize data from saved data
-
+  Future<void> initData(ChannelsProvider channelsProv) async {
     final prefs = await SharedPreferences.getInstance();
 
     if (prefs.getBool('scheduleSwitch') != null) {
-      toggleMainSwitch(prefs.getBool('scheduleSwitch')!, channelsList);
+      toggleMainSwitch(prefs.getBool('scheduleSwitch')!, channelsProv);
     }
     for (var day in _days) {
       if (prefs.getBool('scheduleDays${day.id}') == false) {
@@ -57,35 +50,41 @@ class DaysSchedule with ChangeNotifier {
     if (prefs.getDouble('scheduleVol') != null) {
       scheduleVol = prefs.getDouble('scheduleVol')!;
     }
+
+    alarmPlugin.onForegroundAlarmEventHandler((alarm) async {
+      VolumeController().setVolume(scheduleVol);
+      await Future.delayed(const Duration(seconds: 5));
+      channelsProv.playOrPause();
+      Wakelock.disable();
+    });
     notifyListeners();
   }
 
   Future<void> toggleMainSwitch(
-    bool val,
-    ChannelsProvider channelsList,
+    bool mainSwitch,
+    ChannelsProvider channelsProvider,
   ) async {
-    //MainSwitch
-
-    final bool permisssion = await backgroundExecute(val);
+    final bool permisssion = await backgroundPermissions(mainSwitch);
     if (!permisssion) {
       return;
     }
 
-    if (val) {
-      timer(channelsList);
-    } else {
-      if (scheduleTimer != null) {
-        scheduleTimer!.cancel();
-      }
+    final mainAlarm = await alarmPlugin.getAlarmByUid("main");
+    if (mainSwitch && mainAlarm.isEmpty) {
+      print('added alarm');
+      alarmPlugin.addAlarm(DateTime.now().add(const Duration(minutes: 1)),
+          uid: "main");
+    } else if (!mainSwitch) {
+      print('delete alarms');
+      alarmPlugin.deleteAllAlarms();
     }
-    scheduleSwitch = val;
-    final prefs = await SharedPreferences.getInstance(); //Save Switch State
+    scheduleSwitch = mainSwitch;
+    final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('scheduleSwitch', scheduleSwitch);
     notifyListeners();
   }
 
   Future<void> sliderScheduleVol() async {
-    //Save sliderScheduleVol
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('scheduleVol', scheduleVol);
   }
@@ -99,48 +98,46 @@ class DaysSchedule with ChangeNotifier {
     await prefs.setString('scheduleTime', formattedTime);
   }
 
-  void timer(ChannelsProvider channelsProvider) {
-    scheduleTimer = Timer.periodic(const Duration(seconds: 60), (mytimer) {
-      TimeOfDay deviceTime = TimeOfDay.now();
-      DateTime date = DateTime.now();
-      String weekdayNow = DateFormat('EEEE').format(date).toString();
+  // void timer(ChannelsProvider channelsProvider) {
+  //   scheduleTimer = Timer.periodic(const Duration(seconds: 60), (mytimer) {
+  //     TimeOfDay deviceTime = TimeOfDay.now();
+  //     DateTime date = DateTime.now();
+  //     String weekdayNow = DateFormat('EEEE').format(date).toString();
 
-      final bool isTimeMatch = selectedTime == deviceTime;
+  //     final bool isTimeMatch = selectedTime == deviceTime;
 
-      for (int i = 0; i < _days.length; i++) {
-        if ((_days[i].checked == true) &
-            (weekdayNow == _days[i].backendDay) &
-            isTimeMatch) {
-          VolumeController().setVolume(scheduleVol);
-          if (!channelsProvider.play) {
-            channelsProvider.playOrPause();
-          }
-        }
-      }
-    });
-  }
+  //     for (int i = 0; i < _days.length; i++) {
+  //       if ((_days[i].checked == true) &
+  //           (weekdayNow == _days[i].backendDay) &
+  //           isTimeMatch) {
+  //         VolumeController().setVolume(scheduleVol);
+  //         if (!channelsProvider.play) {
+  //           channelsProvider.playOrPause();
+  //         }
+  //       }
+  //     }
+  //   });
+  // }
 
-  Future<bool> backgroundExecute(bool service) async {
+  Future<bool> backgroundPermissions(bool service) async {
     try {
       if (service) {
+        await OptimizeBattery.stopOptimizingBatteryUsage();
+
         final batOptimization =
-            await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+            await OptimizeBattery.isIgnoringBatteryOptimizations();
+        print('batOptimization $batOptimization');
         if (!batOptimization) {
           return false;
         }
 
-        final serviceIsRunnning = await FlutterForegroundTask.isRunningService;
-        if (!serviceIsRunnning) {
-          await FlutterForegroundTask.startService(
-              notificationTitle: "רדיו ישראל",
-              notificationText: "שעון רדיו מעורר רץ ברקע");
+        final alarmPermission = await alarmPlugin.requestPermission();
+        if (!alarmPermission) {
+          return false;
         }
-      } else {
-        await FlutterForegroundTask.stopService();
       }
       return true;
     } on Exception {
-      await FlutterForegroundTask.restartService();
       return false;
     }
   }
