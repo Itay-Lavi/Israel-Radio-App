@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:radio_timer_app/providers/timer_provider.dart';
 
-import '../alertdialogs/scheduler_dialog.dart';
+import '../alertdialogs/scheduler/scheduler_dialog.dart';
 import '../../providers/channels_provider.dart';
 import '../alertdialogs/timer_dialog.dart';
 import '../../providers/day_schedule.dart';

@@ -1,137 +1,135 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_alarm_background_trigger/flutter_alarm_background_trigger.dart';
-import 'package:optimize_battery/optimize_battery.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:volume_controller/volume_controller.dart';
-import 'package:wakelock/wakelock.dart';
 
+import 'package:move_to_background/move_to_background.dart';
+import 'package:optimize_battery/optimize_battery.dart';
+import 'package:radio_timer_app/services/alarm_service.dart';
+import 'package:volume_controller/volume_controller.dart';
+
+import '../services/preference_service.dart';
 import './channels_provider.dart';
 import '../models/day.dart';
 
+List<String> preferenceKeys = ['scheduleSwitch', 'scheduleTime', 'scheduleVol'];
+
 class DaysSchedule with ChangeNotifier {
-  bool timerRunning = false;
-  bool scheduleSwitch = false;
-  double scheduleVol = 0.5;
-  TimeOfDay selectedTime = TimeOfDay.now();
-  final alarmPlugin = FlutterAlarmBackgroundTrigger();
+  bool _scheduleSwitch = false;
+  double _scheduleVol = 0.5;
+  TimeOfDay _selectedTime =
+      TimeOfDay(hour: TimeOfDay.now().hour, minute: TimeOfDay.now().minute - 1);
+
+  bool get scheduleSwitch => _scheduleSwitch;
+  double get scheduleVol => _scheduleVol;
+  TimeOfDay get selectedTime => _selectedTime;
+
+  final AlarmService _alarmService = AlarmService();
 
   final List<DayItem> _days = [
-    DayItem(0, 'א', 'Sunday', true),
-    DayItem(1, 'ב', 'Monday', true),
-    DayItem(2, 'ג', 'Tuesday', true),
-    DayItem(3, 'ד', 'Wednesday', true),
-    DayItem(4, 'ה', 'Thursday', true),
-    DayItem(5, 'ו', 'Friday', true),
-    DayItem(6, 'ש', 'Saturday', true)
+    const DayItem(7, 'א', 'Sunday', true),
+    const DayItem(1, 'ב', 'Monday', true),
+    const DayItem(2, 'ג', 'Tuesday', true),
+    const DayItem(3, 'ד', 'Wednesday', true),
+    const DayItem(4, 'ה', 'Thursday', true),
+    const DayItem(5, 'ו', 'Friday', true),
+    const DayItem(6, 'ש', 'Saturday', true)
   ];
 
-  List<DayItem> get days {
-    return [..._days];
-  }
+  List<DayItem> get days => [..._days];
 
   Future<void> initData(ChannelsProvider channelsProv) async {
-    final prefs = await SharedPreferences.getInstance();
+    await initDataFromPreferences();
 
-    if (prefs.getBool('scheduleSwitch') != null) {
-      toggleMainSwitch(prefs.getBool('scheduleSwitch')!, channelsProv);
-    }
-    for (var day in _days) {
-      if (prefs.getBool('scheduleDays${day.id}') == false) {
-        day.checked = prefs.getBool('scheduleDays${day.id}')!;
-      }
-    }
-    if (prefs.getString('scheduleTime') != null) {
-      String t = prefs.getString('scheduleTime')!;
-      selectedTime = TimeOfDay(
-          hour: int.parse(t.split(":")[0]), minute: int.parse(t.split(":")[1]));
-    }
-    if (prefs.getDouble('scheduleVol') != null) {
-      scheduleVol = prefs.getDouble('scheduleVol')!;
-    }
-
-    alarmPlugin.onForegroundAlarmEventHandler((alarm) async {
-      VolumeController().setVolume(scheduleVol);
+    _alarmService.alarmEventHandler((alarms) async {
       await Future.delayed(const Duration(seconds: 5));
-      channelsProv.playOrPause();
-      Wakelock.disable();
+      VolumeController().setVolume(scheduleVol);
+      channelsProv.playOrPause(true);
+      MoveToBackground.moveTaskToBack();
+      _alarmService.updateAlarms(_days, selectedTime, scheduleSwitch);
     });
+
     notifyListeners();
   }
 
-  Future<void> toggleMainSwitch(
-    bool mainSwitch,
-    ChannelsProvider channelsProvider,
-  ) async {
+  Future<void> toggleMainSwitch(bool mainSwitch) async {
     final bool permisssion = await backgroundPermissions(mainSwitch);
     if (!permisssion) {
       return;
     }
 
-    final mainAlarm = await alarmPlugin.getAlarmByUid("main");
-    if (mainSwitch && mainAlarm.isEmpty) {
-      print('added alarm');
-      alarmPlugin.addAlarm(DateTime.now().add(const Duration(minutes: 1)),
-          uid: "main");
-    } else if (!mainSwitch) {
-      print('delete alarms');
-      alarmPlugin.deleteAllAlarms();
-    }
-    scheduleSwitch = mainSwitch;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('scheduleSwitch', scheduleSwitch);
+    _scheduleSwitch = mainSwitch;
+    notifyListeners();
+    await _alarmService.updateAlarms(_days, selectedTime, scheduleSwitch);
+    await PreferencesService.setBoolPreference(
+        preferenceKeys[0], scheduleSwitch);
+  }
+
+  Future<void> toggleSelectedDay(int id) async {
+    final index = _days.indexWhere((e) => e.id == id);
+    _days[index] = DayItem(
+        id, _days[index].hebName, _days[index].engName, !_days[index].selected);
+    notifyListeners();
+    await _alarmService.updateAlarms(_days, selectedTime, scheduleSwitch);
+
+    await PreferencesService.setBoolPreference(
+        'scheduleDays${days[index].id}', days[index].selected);
+  }
+
+  Future<void> scheduleTime(TimeOfDay time) async {
+    final replacingTime = time.replacing(hour: time.hour, minute: time.minute);
+
+    _selectedTime = time;
+    notifyListeners();
+    await _alarmService.updateAlarms(_days, selectedTime, scheduleSwitch);
+    String formattedTime = "${replacingTime.hour}:${replacingTime.minute}";
+
+    await PreferencesService.setStringPreference(
+        preferenceKeys[1], formattedTime);
+  }
+
+  Future<void> sliderScheduleVol(val) async {
+    await PreferencesService.setDoublePreference(preferenceKeys[2], val);
+    _scheduleVol = val;
     notifyListeners();
   }
 
-  Future<void> sliderScheduleVol() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('scheduleVol', scheduleVol);
+  Future<void> initDataFromPreferences() async {
+    if (await PreferencesService.getBoolPreference(preferenceKeys[0]) != null) {
+      _scheduleSwitch =
+          await PreferencesService.getBoolPreference(preferenceKeys[0]) ??
+              false;
+    }
+
+    for (int i = 0; i < _days.length; i++) {
+      final bool? selected = await PreferencesService.getBoolPreference(
+          'scheduleDays${_days[i].id}');
+      if (selected == false) {
+        _days[i] =
+            DayItem(_days[i].id, _days[i].hebName, _days[i].engName, false);
+      }
+    }
+
+    final scheduleTimeString =
+        await PreferencesService.getStringPreference(preferenceKeys[1]);
+    if (scheduleTimeString != null) {
+      String t = scheduleTimeString;
+      _selectedTime = TimeOfDay(
+          hour: int.parse(t.split(":")[0]), minute: int.parse(t.split(":")[1]));
+    }
+
+    final scheduleVol =
+        await PreferencesService.getDoublePreference(preferenceKeys[2]);
+    if (scheduleVol != null) {
+      _scheduleVol = scheduleVol;
+    }
   }
-
-  Future<void> scheduleTime(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    var replacingTime = selectedTime.replacing(
-        hour: selectedTime.hour, minute: selectedTime.minute);
-
-    String formattedTime = "${replacingTime.hour}:${replacingTime.minute}";
-    await prefs.setString('scheduleTime', formattedTime);
-  }
-
-  // void timer(ChannelsProvider channelsProvider) {
-  //   scheduleTimer = Timer.periodic(const Duration(seconds: 60), (mytimer) {
-  //     TimeOfDay deviceTime = TimeOfDay.now();
-  //     DateTime date = DateTime.now();
-  //     String weekdayNow = DateFormat('EEEE').format(date).toString();
-
-  //     final bool isTimeMatch = selectedTime == deviceTime;
-
-  //     for (int i = 0; i < _days.length; i++) {
-  //       if ((_days[i].checked == true) &
-  //           (weekdayNow == _days[i].backendDay) &
-  //           isTimeMatch) {
-  //         VolumeController().setVolume(scheduleVol);
-  //         if (!channelsProvider.play) {
-  //           channelsProvider.playOrPause();
-  //         }
-  //       }
-  //     }
-  //   });
-  // }
 
   Future<bool> backgroundPermissions(bool service) async {
     try {
       if (service) {
         await OptimizeBattery.stopOptimizingBatteryUsage();
 
-        final batOptimization =
-            await OptimizeBattery.isIgnoringBatteryOptimizations();
-        print('batOptimization $batOptimization');
-        if (!batOptimization) {
-          return false;
-        }
-
-        final alarmPermission = await alarmPlugin.requestPermission();
+        final alarmPermission = await _alarmService.requestPermission();
         if (!alarmPermission) {
           return false;
         }

@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:radio_timer_app/services/preference_service.dart';
 
 class Channel with ChangeNotifier {
   final int id;
@@ -17,14 +17,11 @@ class Channel with ChangeNotifier {
 
   Future<void> toggleFavoriteStatus() async {
     isFavorite = !isFavorite;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('favorite$id', isFavorite);
-    // print('favorite$id $isFavorite');
+    await PreferencesService.setBoolPreference('favorite$id', isFavorite);
     notifyListeners();
   }
 
   Future<void> saveLoadedChannel() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('channel', id);
+    await PreferencesService.setIntPreference('channel', id);
   }
 }

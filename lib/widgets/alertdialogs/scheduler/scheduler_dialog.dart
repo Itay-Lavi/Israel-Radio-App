@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/day_schedule.dart';
-import '../../providers/channels_provider.dart';
-import 'schedule_timepicker.dart';
+import '../../../providers/day_schedule.dart';
+import '../../../providers/channels_provider.dart';
+import 'days_list_picker.dart';
+import 'time_picker.dart';
+import 'volume_slider.dart';
 
 // ignore: must_be_immutable
 class ScheduleDialog extends StatelessWidget {
@@ -11,7 +13,8 @@ class ScheduleDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final checkDays = Provider.of<DaysSchedule>(context);
+    final scheduleSwitch =
+        context.select<DaysSchedule, bool>((prov) => prov.scheduleSwitch);
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       title: Container(
@@ -44,16 +47,21 @@ class ScheduleDialog extends StatelessWidget {
               children: [
                 Switch(
                     activeColor: Colors.indigoAccent,
-                    value: checkDays.scheduleSwitch,
-                    onChanged: (val) {
-                      checkDays.toggleMainSwitch(val, channelsList);
-                    }),
+                    value: scheduleSwitch,
+                    onChanged: context.read<DaysSchedule>().toggleMainSwitch),
                 const Text('סטטוס')
               ],
             ),
-            !checkDays.scheduleSwitch
+            !scheduleSwitch
                 ? const Text('שעון מעורר לא פעיל')
-                : TimePicker(checkDays) //TimePicker
+                : const Column(
+                    children: [
+                      Divider(thickness: 2),
+                      SchedulerTimePicker(),
+                      DaysListPicker(),
+                      SchedulerVolumeSlider()
+                    ],
+                  )
           ],
         ),
       ),
@@ -72,7 +80,6 @@ class ScheduleDialog extends StatelessWidget {
                     Navigator.of(context).pop();
                   },
                 ),
-                //  TextButton(child: const Text('שמור'), onPressed: () {}),
               ],
             ),
           ],

@@ -1,17 +1,14 @@
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'package:equatable/equatable.dart';
 
-class DayItem with ChangeNotifier {
+class DayItem extends Equatable {
   final int id;
-  final String frontedDay;
-  final String backendDay;
-  bool checked;
+  final String hebName;
+  final String engName;
+  final bool selected;
 
-  DayItem(this.id, this.frontedDay, this.backendDay, this.checked);
+  const DayItem(this.id, this.hebName, this.engName, this.selected);
 
-  Future<void> daycheckbox(int id) async {
-    checked = !checked;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('scheduleDays$id', checked);
-  }
+  @override
+  List<Object> get props => [id, hebName, engName, selected];
 }

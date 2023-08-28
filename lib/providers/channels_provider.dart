@@ -61,13 +61,17 @@ class ChannelsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> playOrPause() async {
+  Future<void> playOrPause([bool isSchedule = false]) async {
+    if (isSchedule && play) return;
+
     updatePlayerLoading(true);
     if (!_channelIsInit) {
       await setChannel(loadedChannel);
     }
     try {
-      await _radioPlayer.playOrPause().timeout(const Duration(seconds: 12));
+      await _radioPlayer
+          .playOrPause()
+          .timeout(Duration(seconds: isSchedule ? 60 : 12));
     } catch (e) {
       await _radioPlayer.stop();
       return Future.error(e);
@@ -82,7 +86,6 @@ class ChannelsProvider with ChangeNotifier {
     }
     loadedChannel = data;
 
-    print('setting channel');
     try {
       await _radioPlayer
           .open(

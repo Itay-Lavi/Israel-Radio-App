@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:radio_timer_app/services/preference_service.dart';
 
 enum ViewType {
   grid,
   list,
 }
+
+String viewTypeString = 'viewType';
 
 class UiProvider with ChangeNotifier {
   ViewType _viewType = ViewType.list;
@@ -13,8 +15,8 @@ class UiProvider with ChangeNotifier {
   ViewType get viewType => _viewType;
 
   void initViewType() async {
-    final prefs = await SharedPreferences.getInstance();
-    final int vtype = prefs.getInt('viewType') ?? 1;
+    final int vtype =
+        await PreferencesService.getIntPreference(viewTypeString) ?? 1;
     if (vtype == 0) {
       _viewType = ViewType.grid;
     } else {
@@ -26,8 +28,7 @@ class UiProvider with ChangeNotifier {
     _viewType = viewType == ViewType.list ? ViewType.grid : ViewType.list;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('viewType', viewType.index);
+    await PreferencesService.setIntPreference(viewTypeString, viewType.index);
   }
 
   void showErrorToast([String text = 'שגיאת אינטרנט']) {

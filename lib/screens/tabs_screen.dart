@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import '../providers/channels_provider.dart';
+import 'package:provider/provider.dart';
 
-import 'channels_screen.dart';
+import '../providers/channels_provider.dart';
 import '../widgets/player/channels_bottom_player.dart';
+import './channels_screen.dart';
 
 class TabsScreen extends StatefulWidget {
-  final ChannelsProvider channels;
-
-  const TabsScreen(this.channels, {Key? key}) : super(key: key);
+  const TabsScreen({Key? key}) : super(key: key);
 
   @override
   State<TabsScreen> createState() => _TabsScreenState();
@@ -18,6 +17,7 @@ class _TabsScreenState extends State<TabsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final channelsProv = context.read<ChannelsProvider>();
     return Stack(children: [
       Container(
         decoration: BoxDecoration(
@@ -32,7 +32,7 @@ class _TabsScreenState extends State<TabsScreen> {
         ),
       ),
       FutureBuilder(
-          future: widget.channels.initData(),
+          future: channelsProv.initData(),
           builder: (ctx, chanSnapShot) {
             if (chanSnapShot.hasError) {
               if (chanSnapShot.error.toString().contains('SocketException')) {

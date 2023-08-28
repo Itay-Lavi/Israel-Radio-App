@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:radio_timer_app/providers/channels_provider.dart';
 import 'package:radio_timer_app/providers/ui_provider.dart';
 
-import '../providers/channels_provider.dart';
 import '../providers/day_schedule.dart';
 import '../screens/tabs_screen.dart';
 
@@ -14,8 +14,8 @@ class TabsController extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final channels = context.read<ChannelsProvider>();
-    context.read<DaysSchedule>().initData(channels);
+    final channelsProv = context.read<ChannelsProvider>();
+    context.read<DaysSchedule>().initData(channelsProv);
 
     return DefaultTabController(
         length: 2,
@@ -80,7 +80,7 @@ class TabsController extends StatelessWidget {
                     ]),
               ),
             ),
-            TabsScreen(channels)
+            TabsScreen()
           ]),
         ));
   }
