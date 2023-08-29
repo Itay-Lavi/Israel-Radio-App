@@ -45,34 +45,30 @@ class AlarmService {
     return await _alarmPlugin.requestPermission();
   }
 
-  List<DateTime> getSelectedWeekdays(
+  static List<DateTime> getSelectedWeekdays(
       List<DayItem> days, TimeOfDay selectedTime) {
     List<DateTime> selectedWeekdays = [];
 
     for (final day in days) {
-      if (day.selected) {
-        DateTime dateTime = DateTime.now();
-        int daysToAdd = 0;
+      if (!day.selected) continue;
 
-        // Calculate days to add based on selected weekday
-        daysToAdd = day.id - dateTime.weekday;
-        if (daysToAdd <= 0) {
-          daysToAdd += 7;
-        }
+      DateTime dateTime = DateTime.now();
+      int daysToAdd = 0;
 
-        DateTime selectedTimeDate = DateTime(dateTime.year, dateTime.month,
-            dateTime.day, selectedTime.hour, selectedTime.minute);
+      DateTime selectedTimeDate = DateTime(dateTime.year, dateTime.month,
+          dateTime.day, selectedTime.hour, selectedTime.minute);
 
-        // If the selected time has already passed for the current day, move to the next occurrence of the selected weekday
-        if (day.id == dateTime.weekday && dateTime.isBefore(selectedTimeDate)) {
-          daysToAdd -= 7;
-        }
-
-        dateTime = dateTime.add(Duration(days: daysToAdd));
-        dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day,
-            selectedTime.hour, selectedTime.minute);
-        selectedWeekdays.add(dateTime);
+      // Calculate days to add based on selected weekday
+      daysToAdd = day.id - dateTime.weekday;
+      if (daysToAdd < 0 ||
+          (daysToAdd == 0 && dateTime.isAfter(selectedTimeDate))) {
+        daysToAdd += 7;
       }
+
+      dateTime = dateTime.add(Duration(days: daysToAdd));
+      dateTime = DateTime(dateTime.year, dateTime.month, dateTime.day,
+          selectedTime.hour, selectedTime.minute);
+      selectedWeekdays.add(dateTime);
     }
 
     return selectedWeekdays;

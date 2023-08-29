@@ -48,6 +48,10 @@ dependencies:
    git: https://github.com/Itay-Lavi/flutter_alarm_background_trigger.git
 
 dev_dependencies: 
+  integration_test:
+    sdk: flutter  
+  flutter_test:
+    sdk: flutter  
   flutter_launcher_icons: "^0.9.2"
   flutter_lints: ^2.0.0
 
