@@ -1,19 +1,15 @@
 import 'dart:collection';
 import 'dart:convert';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 
 import '../models/channel.dart';
 
 class ChannelsApi {
-  static const String _imagesBaseUrl =
-      "https://firebasestorage.googleapis.com/v0/b/"
-      "israelradio-87ac7"
-      ".appspot.com/o/radioImages%2F";
-
   static Future<List<Channel>> fetchChannels() async {
-    final url = Uri.https('pastebin.com', '/raw/dz7qLi5B');
+    final url = Uri.parse(dotenv.env['RADIO_CHANNELS_URL']!);
     late Response response;
     try {
       response = await http.get(url);
@@ -33,7 +29,8 @@ class ChannelsApi {
 
     sortedData.forEach((prodId, prodData) {
       try {
-        final imageUrl = "${_imagesBaseUrl + prodData['imageUrl']}?alt=media";
+        final imageUrl =
+            "${dotenv.env['RADIO_IMAGES_URL']! + prodData['imageUrl']}?alt=media";
         channelsFetch.add(
           Channel(
             id: prodData['id'],

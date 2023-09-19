@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_alarm_background_trigger/flutter_alarm_background_trigger.dart';
 import 'package:provider/provider.dart';
-import 'package:radio_timer_app/providers/ui_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import 'screens/detail_player_screen.dart';
 import './widgets/tabs_controller.dart';
-
+import '../screens/detail_player_screen.dart';
+import '../providers/ui_provider.dart';
 import '../providers/timer_provider.dart';
 import '../providers/day_schedule.dart';
 import '../providers/channels_provider.dart';
 
-main() {
+main() async {
   WidgetsFlutterBinding.ensureInitialized();
   FlutterAlarmBackgroundTrigger.initialize();
+  await dotenv.load(fileName: "config.env");
 
   runApp(const MyApp());
 }
