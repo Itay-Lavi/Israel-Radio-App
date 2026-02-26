@@ -1,12 +1,16 @@
+// android/build.gradle (top-level)
+
 buildscript {
-    ext.kotlin_version = '1.7.10'
+    // Align with Flutter's currently supported/soon-required toolchain
+    ext.kotlin_version = '2.1.0'
+
     repositories {
         google()
         mavenCentral()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.1.2'
+        classpath 'com.android.tools.build:gradle:8.6.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -22,8 +26,32 @@ rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
-subprojects {
-    project.evaluationDependsOn(':app')
+
+// --- read compileSdk from local.properties, default to 36 ---
+def localProps = new Properties()
+def lpFile = new File(rootDir, "local.properties")
+if (lpFile.exists()) {
+    lpFile.withReader('UTF-8') { r -> localProps.load(r) }
+}
+def COMPILE_SDK = (localProps.getProperty('flutter.compileSdkVersion') ?: "36") as Integer
+// -----------------------------------------------------------
+
+subprojects { project ->
+    project.afterEvaluate {
+        if (project.hasProperty("android")) {
+            project.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+                if (project.plugins.hasPlugin("org.jetbrains.kotlin.android")) {
+                    kotlinOptions {
+                        jvmTarget = '17'
+                    }
+                }
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {

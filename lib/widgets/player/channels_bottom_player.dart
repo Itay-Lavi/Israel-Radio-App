@@ -31,7 +31,8 @@ class ChannelsBottomPlayer extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(40),
           ),
-          color: const Color.fromARGB(255, 107, 119, 202).withOpacity(0.9),
+          color:
+              const Color.fromARGB(255, 107, 119, 202).withValues(alpha: 0.9),
           child:
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Row(
@@ -41,7 +42,7 @@ class ChannelsBottomPlayer extends StatelessWidget {
                     ? Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 15),
                         child: CircularProgressIndicator(
-                            color: Colors.white.withOpacity(0.85)))
+                            color: Colors.white.withValues(alpha: 0.85)))
                     : IconButton(
                         onPressed: () async {
                           try {
@@ -53,7 +54,7 @@ class ChannelsBottomPlayer extends StatelessWidget {
                         icon: Icon(channelsProvider.play
                             ? Icons.pause_circle
                             : Icons.play_circle),
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                         splashColor: Colors.white54,
                         splashRadius: 38,
                         iconSize: 53,

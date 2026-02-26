@@ -1,18 +1,18 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
-import 'package:flutter_alarm_background_trigger/flutter_alarm_background_trigger.dart';
+// import 'package:flutter_alarm_background_trigger/flutter_alarm_background_trigger.dart';
 import 'package:radio_timer_app/models/day.dart';
 
 class AlarmService {
-  late FlutterAlarmBackgroundTrigger _alarmPlugin;
+  // late FlutterAlarmBackgroundTrigger _alarmPlugin;
 
   AlarmService() {
-    _alarmPlugin = FlutterAlarmBackgroundTrigger();
+    // _alarmPlugin = FlutterAlarmBackgroundTrigger();
   }
 
-  alarmEventHandler(void Function(List<AlarmItem>) func) {
-    _alarmPlugin.onForegroundAlarmEventHandler(func);
-  }
+  // void alarmEventHandler(void Function(List<AlarmItem>) func) {
+  //   _alarmPlugin.onForegroundAlarmEventHandler(func);
+  // }
 
   Future<void> updateAlarms(
       List<DayItem> days, TimeOfDay selectedTime, bool scheduleSwitch) async {
@@ -24,26 +24,26 @@ class AlarmService {
     }
   }
 
-  Future<List<AlarmItem>> getAllAlarms() async {
-    return await _alarmPlugin.getAllAlarms();
-  }
+  // Future<List<AlarmItem>> getAllAlarms() async {
+  //   return await _alarmPlugin.getAllAlarms();
+  // }
 
   Future<void> addAlarms(List<DateTime> selectedDates) async {
     for (final datetime in selectedDates) {
-      await _alarmPlugin.addAlarm(datetime);
+      // await _alarmPlugin.addAlarm(datetime);
     }
   }
 
   Future<void> deleteAllAlarm() async {
-    final allAlarms = await _alarmPlugin.getAllAlarms();
-    for (final alarm in allAlarms) {
-      await _alarmPlugin.deleteAlarm(alarm.id!);
-    }
+    // final allAlarms = await _alarmPlugin.getAllAlarms();
+    // for (final alarm in allAlarms) {
+    //   await _alarmPlugin.deleteAlarm(alarm.id!);
+    // }
   }
 
-  Future<bool> requestPermission() async {
-    return await _alarmPlugin.requestPermission();
-  }
+  // Future<bool> requestPermission() async {
+  //   return await _alarmPlugin.requestPermission();
+  // }
 
   static List<DateTime> getSelectedWeekdays(
       List<DayItem> days, TimeOfDay selectedTime) {

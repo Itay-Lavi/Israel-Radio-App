@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'package:move_to_background/move_to_background.dart';
-import 'package:optimize_battery/optimize_battery.dart';
+// import 'package:move_to_background/move_to_background.dart';
+import 'package:disable_battery_optimizations_latest/disable_battery_optimizations_latest.dart';
 import 'package:radio_timer_app/services/alarm_service.dart';
 import 'package:volume_controller/volume_controller.dart';
 
@@ -40,13 +40,13 @@ class DaysSchedule with ChangeNotifier {
   Future<void> initData(ChannelsProvider channelsProv) async {
     await initDataFromPreferences();
 
-    _alarmService.alarmEventHandler((alarms) async {
-      await Future.delayed(const Duration(seconds: 5));
-      VolumeController().setVolume(scheduleVol);
-      channelsProv.playOrPause(true);
-      MoveToBackground.moveTaskToBack();
-      _alarmService.updateAlarms(_days, selectedTime, scheduleSwitch);
-    });
+    // _alarmService.alarmEventHandler((alarms) async {
+    //   await Future.delayed(const Duration(seconds: 5));
+    //   VolumeController.instance.setVolume(scheduleVol);
+    //   channelsProv.playOrPause(true);
+    //   // MoveToBackground.moveTaskToBack();
+    //   _alarmService.updateAlarms(_days, selectedTime, scheduleSwitch);
+    // });
 
     notifyListeners();
   }
@@ -87,7 +87,7 @@ class DaysSchedule with ChangeNotifier {
         preferenceKeys[1], formattedTime);
   }
 
-  Future<void> sliderScheduleVol(val) async {
+  Future<void> sliderScheduleVol(double val) async {
     await PreferencesService.setDoublePreference(preferenceKeys[2], val);
     _scheduleVol = val;
     notifyListeners();
@@ -127,12 +127,12 @@ class DaysSchedule with ChangeNotifier {
   Future<bool> backgroundPermissions(bool service) async {
     try {
       if (service) {
-        await OptimizeBattery.stopOptimizingBatteryUsage();
-
-        final alarmPermission = await _alarmService.requestPermission();
-        if (!alarmPermission) {
-          return false;
-        }
+        await DisableBatteryOptimizationLatest
+            .showDisableBatteryOptimizationSettings();
+        // final alarmPermission = await _alarmService.requestPermission();
+        // if (!alarmPermission) {
+        //   return false;
+        // }
       }
       return true;
     } on Exception {

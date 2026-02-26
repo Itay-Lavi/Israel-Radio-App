@@ -27,7 +27,7 @@ class DetailPlayerScreen extends StatelessWidget {
 
   MiniMusicVisualizer _musicVisualizer(BuildContext context) {
     return MiniMusicVisualizer(
-      color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
       width: 20,
       height: 30,
     );

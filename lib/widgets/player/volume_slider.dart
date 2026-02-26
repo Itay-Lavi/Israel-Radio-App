@@ -16,7 +16,7 @@ class SliderState extends State<VolumeSlider> {
 
   @override
   void dispose() {
-    VolumeController().removeListener();
+    VolumeController.instance.removeListener();
     super.dispose();
   }
 
@@ -28,13 +28,13 @@ class SliderState extends State<VolumeSlider> {
 
   //init volume_control plugin
   Future<void> initVolumeState() async {
-    VolumeController().showSystemUI = false;
+    VolumeController.instance.showSystemUI = false;
 
     //read the current volume
-    final double initVol = await VolumeController().getVolume();
+    final double initVol = await VolumeController.instance.getVolume();
     _setVol(initVol);
 
-    VolumeController().listener((volume) async {
+    VolumeController.instance.addListener((volume) async {
       //listener
       _setVol(volume);
     });
@@ -50,7 +50,7 @@ class SliderState extends State<VolumeSlider> {
       _val = volume;
     });
 
-    VolumeController().setVolume(volume);
+    VolumeController.instance.setVolume(volume);
 
     Future.delayed(const Duration(milliseconds: 70), () {
       _changingVolume = false;

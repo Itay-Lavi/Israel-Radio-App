@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:radio_timer_app/providers/ui_provider.dart';
-import 'package:radio_timer_app/widgets/channels/grid_item.dart';
 
 import '../models/channel.dart';
-import '../widgets/channels/list_item.dart';
+import '../providers/ui_provider.dart';
 import '../providers/channels_provider.dart';
+import '../widgets/channels/grid_item.dart';
+import '../widgets/channels/list_item.dart';
 import './detail_player_screen.dart';
 
 class ChannelsList extends StatelessWidget {

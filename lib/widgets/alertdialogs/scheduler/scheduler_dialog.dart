@@ -46,7 +46,7 @@ class ScheduleDialog extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Switch(
-                    activeColor: Colors.indigoAccent,
+                    activeThumbColor: Colors.indigoAccent,
                     value: scheduleSwitch,
                     onChanged: context.read<DaysSchedule>().toggleMainSwitch),
                 const Text('סטטוס')

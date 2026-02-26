@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:assets_audio_player/assets_audio_player.dart';
+// import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,7 +8,7 @@ import '../models/channel.dart';
 import '../services/channels_api.dart';
 
 class ChannelsProvider with ChangeNotifier {
-  final _radioPlayer = AssetsAudioPlayer.withId('1');
+  // final _radioPlayer = AssetsAudioPlayer.withId('1');
   late Channel loadedChannel;
   bool _channelIsInit = false;
   bool _playerLoading = false;
@@ -69,11 +69,11 @@ class ChannelsProvider with ChangeNotifier {
       await setChannel(loadedChannel);
     }
     try {
-      await _radioPlayer
-          .playOrPause()
-          .timeout(Duration(seconds: isSchedule ? 60 : 12));
+      // await _radioPlayer
+      //     .playOrPause()
+      //     .timeout(Duration(seconds: isSchedule ? 60 : 12));
     } catch (e) {
-      await _radioPlayer.stop();
+      // await _radioPlayer.stop();
       return Future.error(e);
     } finally {
       updatePlayerLoading(false);
@@ -87,29 +87,29 @@ class ChannelsProvider with ChangeNotifier {
     loadedChannel = data;
 
     try {
-      await _radioPlayer
-          .open(
-              Audio.liveStream(
-                data.radioUrl,
-                metas: Metas(
-                    title: data.title,
-                    image: MetasImage.network(data.imageUrl)),
-              ),
-              autoStart: false,
-              playInBackground: PlayInBackground.enabled,
-              showNotification: true,
-              notificationSettings: const NotificationSettings(
-                  playPauseEnabled: true,
-                  stopEnabled: true,
-                  nextEnabled: false,
-                  prevEnabled: false,
-                  seekBarEnabled: false))
-          .timeout(const Duration(seconds: 8));
+      // await _radioPlayer
+      //     .open(
+      //         Audio.liveStream(
+      //           data.radioUrl,
+      //           metas: Metas(
+      //               title: data.title,
+      //               image: MetasImage.network(data.imageUrl)),
+      //         ),
+      //         autoStart: false,
+      //         playInBackground: PlayInBackground.enabled,
+      //         showNotification: true,
+      //         notificationSettings: const NotificationSettings(
+      //             playPauseEnabled: true,
+      //             stopEnabled: true,
+      //             nextEnabled: false,
+      //             prevEnabled: false,
+      //             seekBarEnabled: false))
+      //     .timeout(const Duration(seconds: 8));
       if (autoPlay || play) {
-        await _radioPlayer.play().timeout(const Duration(seconds: 8));
+        // await _radioPlayer.play().timeout(const Duration(seconds: 8));
       }
     } catch (e) {
-      await _radioPlayer.stop();
+      // await _radioPlayer.stop();
       return Future.error(e);
     } finally {
       _channelIsInit = true;
@@ -137,11 +137,11 @@ class ChannelsProvider with ChangeNotifier {
   }
 
   void isPlayingTimer() {
-    _radioPlayer.isPlaying.listen((isPlaying) {
-      if (play != isPlaying) {
-        play = isPlaying;
-        notifyListeners();
-      }
-    });
+    // _radioPlayer.isPlaying.listen((isPlaying) {
+    //   if (play != isPlaying) {
+    //     play = isPlaying;
+    //     notifyListeners();
+    //   }
+    // });
   }
 }

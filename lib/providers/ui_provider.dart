@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+// import 'package:fluttertoast/fluttertoast.dart';
 import 'package:radio_timer_app/services/preference_service.dart';
 
 enum ViewType {
@@ -32,13 +32,13 @@ class UiProvider with ChangeNotifier {
   }
 
   void showErrorToast([String text = 'שגיאת אינטרנט']) {
-    Fluttertoast.showToast(
-        msg: text,
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.SNACKBAR,
-        timeInSecForIosWeb: 3,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0);
+    // Fluttertoast.showToast(
+    //     msg: text,
+    //     toastLength: Toast.LENGTH_SHORT,
+    //     gravity: ToastGravity.SNACKBAR,
+    //     timeInSecForIosWeb: 3,
+    //     backgroundColor: Colors.red,
+    //     textColor: Colors.white,
+    //     fontSize: 16.0);
   }
 }

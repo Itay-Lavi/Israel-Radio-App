@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_alarm_background_trigger/flutter_alarm_background_trigger.dart';
+// import 'package:flutter_alarm_background_trigger/flutter_alarm_background_trigger.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -11,9 +11,9 @@ import '../providers/timer_provider.dart';
 import '../providers/day_schedule.dart';
 import '../providers/channels_provider.dart';
 
-main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FlutterAlarmBackgroundTrigger.initialize();
+  // FlutterAlarmBackgroundTrigger.initialize();
   await dotenv.load(fileName: "config.env");
 
   runApp(const MyApp());
@@ -38,6 +38,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'שעון רדיו',
         theme: ThemeData(
+            useMaterial3: false,
             fontFamily: 'Lato',
             iconTheme: const IconThemeData(color: Colors.white),
             colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.indigo)
