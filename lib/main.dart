@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // import 'package:flutter_alarm_background_trigger/flutter_alarm_background_trigger.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -14,13 +15,18 @@ import '../providers/channels_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // FlutterAlarmBackgroundTrigger.initialize();
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.itay.israel_radio.channel.audio',
+    androidNotificationChannelName: 'Audio playback',
+    androidNotificationOngoing: true,
+  );
   await dotenv.load(fileName: "config.env");
 
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {

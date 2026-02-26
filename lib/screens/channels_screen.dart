@@ -11,7 +11,7 @@ import './detail_player_screen.dart';
 class ChannelsList extends StatelessWidget {
   final bool showFavs;
 
-  const ChannelsList(this.showFavs, {Key? key}) : super(key: key);
+  const ChannelsList(this.showFavs, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +33,8 @@ class ChannelsList extends StatelessWidget {
                 DetailPlayerScreen.routeName,
               );
         }
-      } catch (e) {
-        uiProvider.showErrorToast();
+      } catch (e, st) {
+        uiProvider.showErrorToast(error: e, stackTrace: st);
       } finally {
         channelsProvider.updatePlayerLoading(false);
       }

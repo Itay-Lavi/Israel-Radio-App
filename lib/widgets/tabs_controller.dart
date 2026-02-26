@@ -10,7 +10,7 @@ import '../screens/tabs_screen.dart';
 
 // ignore: must_be_immutable
 class TabsController extends StatelessWidget {
-  const TabsController({Key? key}) : super(key: key);
+  const TabsController({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -1,14 +1,23 @@
 import 'dart:async';
 
-// import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/channel.dart';
 import '../services/channels_api.dart';
 
 class ChannelsProvider with ChangeNotifier {
-  // final _radioPlayer = AssetsAudioPlayer.withId('1');
+  final AudioPlayer _player = AudioPlayer();
+  StreamSubscription<PlayerState>? _playingSub;
+  StreamSubscription<PlaybackEvent>? _errorSub;
+  final StreamController<(Object, StackTrace)> _errorController =
+      StreamController.broadcast();
+
+  /// Emits whenever a playback error occurs that the UI should surface.
+  Stream<(Object, StackTrace)> get errorStream => _errorController.stream;
+
   late Channel loadedChannel;
   bool _channelIsInit = false;
   bool _playerLoading = false;
@@ -61,22 +70,25 @@ class ChannelsProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void _setPlayState(bool isPlaying) {
+    if (play != isPlaying) {
+      play = isPlaying;
+      notifyListeners();
+    }
+  }
+
   Future<void> playOrPause([bool isSchedule = false]) async {
     if (isSchedule && play) return;
 
-    updatePlayerLoading(true);
     if (!_channelIsInit) {
-      await setChannel(loadedChannel);
+      await setChannel(loadedChannel, true);
+      return;
     }
-    try {
-      // await _radioPlayer
-      //     .playOrPause()
-      //     .timeout(Duration(seconds: isSchedule ? 60 : 12));
-    } catch (e) {
-      // await _radioPlayer.stop();
-      return Future.error(e);
-    } finally {
-      updatePlayerLoading(false);
+
+    if (_player.playing) {
+      _player.pause();
+    } else {
+      _player.play();
     }
   }
 
@@ -85,34 +97,38 @@ class ChannelsProvider with ChangeNotifier {
       return;
     }
     loadedChannel = data;
+    _channelIsInit = true;
+
+    // Show loading + update channel in UI immediately
+    _playerLoading = true;
+    notifyListeners();
 
     try {
-      // await _radioPlayer
-      //     .open(
-      //         Audio.liveStream(
-      //           data.radioUrl,
-      //           metas: Metas(
-      //               title: data.title,
-      //               image: MetasImage.network(data.imageUrl)),
-      //         ),
-      //         autoStart: false,
-      //         playInBackground: PlayInBackground.enabled,
-      //         showNotification: true,
-      //         notificationSettings: const NotificationSettings(
-      //             playPauseEnabled: true,
-      //             stopEnabled: true,
-      //             nextEnabled: false,
-      //             prevEnabled: false,
-      //             seekBarEnabled: false))
-      //     .timeout(const Duration(seconds: 8));
+      final audioSource = AudioSource.uri(
+        Uri.parse(data.radioUrl),
+        tag: MediaItem(
+          id: data.id.toString(),
+          title: data.title,
+          artUri: Uri.parse(data.imageUrl),
+        ),
+      );
+
+      // setAudioSource is fire-and-forget — live streams block indefinitely if awaited.
+      // Attach catchError so a startup network failure is caught and surfaced to the UI.
+      _player.setAudioSource(audioSource).catchError((Object e, StackTrace st) {
+        _handlePlayerError(e, st, notify: true);
+        return null;
+      });
+
       if (autoPlay || play) {
-        // await _radioPlayer.play().timeout(const Duration(seconds: 8));
+        _player.play();
       }
     } catch (e) {
-      // await _radioPlayer.stop();
+      _player.stop();
+      _playerLoading = false;
+      _setPlayState(false);
       return Future.error(e);
     } finally {
-      _channelIsInit = true;
       loadedChannel.saveLoadedChannel();
     }
   }
@@ -131,17 +147,52 @@ class ChannelsProvider with ChangeNotifier {
       loaded = findById(nextChannel);
     }
 
-    updatePlayerLoading(true);
     await setChannel(loaded, true);
-    updatePlayerLoading(false);
+  }
+
+  /// Resets player state and, when [notify] is true, pushes the error onto
+  /// [errorStream] so the active widget can show a toast.
+  void _handlePlayerError(Object error, StackTrace stackTrace,
+      {bool notify = false}) {
+    debugPrint('[ChannelsProvider] Playback error: $error');
+    debugPrint(stackTrace.toString());
+    _playerLoading = false;
+    play = false;
+    notifyListeners();
+    if (notify && !_errorController.isClosed) {
+      _errorController.add((error, stackTrace));
+    }
   }
 
   void isPlayingTimer() {
-    // _radioPlayer.isPlaying.listen((isPlaying) {
-    //   if (play != isPlaying) {
-    //     play = isPlaying;
-    //     notifyListeners();
-    //   }
-    // });
+    _playingSub?.cancel();
+    _errorSub?.cancel();
+
+    // Catch stream-level errors (e.g. no internet, stream drop)
+    _errorSub = _player.playbackEventStream.listen(
+      null,
+      onError: _handlePlayerError,
+    );
+
+    // Drive both play and loading state from the player's real-time state
+    _playingSub = _player.playerStateStream.listen((state) {
+      final isLoading = state.processingState == ProcessingState.loading ||
+          state.processingState == ProcessingState.buffering;
+      final isPlaying = state.playing;
+      if (_playerLoading != isLoading || play != isPlaying) {
+        _playerLoading = isLoading;
+        play = isPlaying;
+        notifyListeners();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _playingSub?.cancel();
+    _errorSub?.cancel();
+    _errorController.close();
+    _player.dispose();
+    super.dispose();
   }
 }

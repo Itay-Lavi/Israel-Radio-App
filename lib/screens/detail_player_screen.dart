@@ -11,7 +11,7 @@ import '../widgets/player/detail_player.dart';
 import '../widgets/player/detail_player_appbar.dart';
 
 class DetailPlayerScreen extends StatelessWidget {
-  const DetailPlayerScreen({Key? key}) : super(key: key);
+  const DetailPlayerScreen({super.key});
 
   static const routeName = '/player-screen';
 
@@ -30,6 +30,7 @@ class DetailPlayerScreen extends StatelessWidget {
       color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
       width: 20,
       height: 30,
+      animate: true,
     );
   }
 

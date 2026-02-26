@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,11 +10,33 @@ import '../../screens/detail_player_screen.dart';
 import '../../models/channel.dart';
 import '../../providers/channels_provider.dart';
 
-// ignore: must_be_immutable
-class ChannelsBottomPlayer extends StatelessWidget {
-  ChannelsBottomPlayer({Key? key}) : super(key: key);
+class ChannelsBottomPlayer extends StatefulWidget {
+  const ChannelsBottomPlayer({super.key});
 
-  late List<Channel> channelsList;
+  @override
+  State<ChannelsBottomPlayer> createState() => _ChannelsBottomPlayerState();
+}
+
+class _ChannelsBottomPlayerState extends State<ChannelsBottomPlayer> {
+  StreamSubscription<(Object, StackTrace)>? _errorSub;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _errorSub?.cancel();
+    final channelsProvider = context.read<ChannelsProvider>();
+    final uiProvider = context.read<UiProvider>();
+    _errorSub = channelsProvider.errorStream.listen((record) {
+      final (error, stackTrace) = record;
+      uiProvider.showErrorToast(error: error, stackTrace: stackTrace);
+    });
+  }
+
+  @override
+  void dispose() {
+    _errorSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +71,9 @@ class ChannelsBottomPlayer extends StatelessWidget {
                         onPressed: () async {
                           try {
                             await channelsProvider.playOrPause();
-                          } catch (err) {
-                            uiProvider.showErrorToast();
+                          } catch (err, st) {
+                            uiProvider.showErrorToast(
+                                error: err, stackTrace: st);
                           }
                         },
                         icon: Icon(channelsProvider.play
@@ -64,6 +89,7 @@ class ChannelsBottomPlayer extends StatelessWidget {
                     color: Colors.white54,
                     width: 7,
                     height: 20,
+                    animate: true,
                   )
               ],
             ),

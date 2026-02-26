@@ -1,4 +1,6 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,13 +9,33 @@ import '../../providers/ui_provider.dart';
 import 'volume_slider.dart';
 
 class DetailPlayer extends StatefulWidget {
-  const DetailPlayer({Key? key}) : super(key: key);
+  const DetailPlayer({super.key});
 
   @override
   State<DetailPlayer> createState() => _DetailPlayerState();
 }
 
 class _DetailPlayerState extends State<DetailPlayer> {
+  StreamSubscription<(Object, StackTrace)>? _errorSub;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _errorSub?.cancel();
+    final channelsProvider = context.read<ChannelsProvider>();
+    final uiProvider = context.read<UiProvider>();
+    _errorSub = channelsProvider.errorStream.listen((record) {
+      final (error, stackTrace) = record;
+      uiProvider.showErrorToast(error: error, stackTrace: stackTrace);
+    });
+  }
+
+  @override
+  void dispose() {
+    _errorSub?.cancel();
+    super.dispose();
+  }
+
   IconButton _iconButtonWidget(BuildContext context, IconData icon, Color color,
       double size, Function onTapFunc) {
     return IconButton(
@@ -45,9 +67,9 @@ class _DetailPlayerState extends State<DetailPlayer> {
                         Icons.skip_previous,
                         Colors.white,
                         45,
-                        () => channelsProvider
-                            .moveChannels(-1)
-                            .onError((__, _) => uiProvider.showErrorToast())),
+                        () => channelsProvider.moveChannels(-1).onError(
+                            (e, st) => uiProvider.showErrorToast(
+                                error: e, stackTrace: st))),
                     const SizedBox(width: 10),
                     channelsProvider.playerLoading
                         ? const Padding(
@@ -61,16 +83,17 @@ class _DetailPlayerState extends State<DetailPlayer> {
                             Theme.of(context).colorScheme.secondary,
                             70,
                             () => channelsProvider.playOrPause().onError(
-                                (__, _) => uiProvider.showErrorToast())),
+                                (e, st) => uiProvider.showErrorToast(
+                                    error: e, stackTrace: st))),
                     const SizedBox(width: 10),
                     _iconButtonWidget(
                         context,
                         Icons.skip_next,
                         Colors.white,
                         45,
-                        () => channelsProvider
-                            .moveChannels(1)
-                            .onError((__, _) => uiProvider.showErrorToast())),
+                        () => channelsProvider.moveChannels(1).onError(
+                            (e, st) => uiProvider.showErrorToast(
+                                error: e, stackTrace: st))),
                   ]);
             }),
             const VolumeSlider(),

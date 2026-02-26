@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 // import 'package:move_to_background/move_to_background.dart';
 import 'package:disable_battery_optimizations_latest/disable_battery_optimizations_latest.dart';
 import 'package:radio_timer_app/services/alarm_service.dart';
-import 'package:volume_controller/volume_controller.dart';
 
 import '../services/preference_service.dart';
 import './channels_provider.dart';

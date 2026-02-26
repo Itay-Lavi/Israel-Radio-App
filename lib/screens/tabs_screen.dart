@@ -7,7 +7,7 @@ import '../widgets/player/channels_bottom_player.dart';
 import './channels_screen.dart';
 
 class TabsScreen extends StatefulWidget {
-  const TabsScreen({Key? key}) : super(key: key);
+  const TabsScreen({super.key});
 
   @override
   State<TabsScreen> createState() => _TabsScreenState();
