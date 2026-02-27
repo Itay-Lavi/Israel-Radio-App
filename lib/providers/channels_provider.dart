@@ -52,6 +52,9 @@ class ChannelsProvider with ChangeNotifier {
       if (!_errorController.isClosed) {
         _errorController.add(record);
       }
+      // Error while playing — treat as paused so the UI reflects reality.
+      _playerLoading = false;
+      _setPlayState(false);
     });
 
     FlutterAlarmBackgroundTrigger().onForegroundAlarmEventHandler((alarms) {

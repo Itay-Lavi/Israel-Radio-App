@@ -22,18 +22,17 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
 
     // Forward stream-level errors (dropped connection, etc.)
+    // Also pause the player so the playing state transitions to false.
     _player.playbackEventStream.listen(null,
         onError: (Object e, StackTrace st) {
       errorController.add((e, st));
+      _player.pause();
     });
   }
 
   AudioPlayer get player => _player;
 
-  // ---------------------------------------------------------------------------
   // Transport controls
-  // ---------------------------------------------------------------------------
-
   @override
   Future<void> play() => _player.play();
 
@@ -49,9 +48,7 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> seek(Duration position) => _player.seek(position);
 
-  // ---------------------------------------------------------------------------
   // Custom actions
-  // ---------------------------------------------------------------------------
 
   /// Load a radio channel.
   ///
@@ -105,9 +102,7 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
     }
   }
 
-  // ---------------------------------------------------------------------------
   // State mapping
-  // ---------------------------------------------------------------------------
 
   PlaybackState _transformEvent(PlaybackEvent event) {
     return PlaybackState(
@@ -136,11 +131,5 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
       speed: _player.speed,
       queueIndex: event.currentIndex,
     );
-  }
-
-  @override
-  Future<void> onTaskRemoved() async {
-    // Do NOT stop — keep the foreground service alive.
-    // The androidStopForegroundOnPause:false config ensures this.
   }
 }
