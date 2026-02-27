@@ -1,27 +1,33 @@
 import 'dart:async';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:volume_controller/volume_controller.dart';
+
+import 'package:flutter_alarm_background_trigger/flutter_alarm_background_trigger.dart';
 
 import '../models/channel.dart';
+import '../services/audio_player_handler.dart';
 import '../services/channels_api.dart';
 
 class ChannelsProvider with ChangeNotifier {
-  final AudioPlayer _player = AudioPlayer();
-  StreamSubscription<PlayerState>? _playingSub;
-  StreamSubscription<PlaybackEvent>? _errorSub;
+  late final RadioAudioHandler _handler;
+  Future<void> Function()? _syncAlarmsCallback;
+  StreamSubscription<PlaybackState>? _playbackSub;
+  StreamSubscription<(Object, StackTrace)>? _errorSub;
+
   final StreamController<(Object, StackTrace)> _errorController =
       StreamController.broadcast();
 
-  /// Emits whenever a playback error occurs that the UI should surface.
   Stream<(Object, StackTrace)> get errorStream => _errorController.stream;
 
   late Channel loadedChannel;
   bool _channelIsInit = false;
   bool _playerLoading = false;
   bool play = false;
+  bool _isInitialized = false;
+  bool _alarmHandled = false;
 
   List<Channel> _channels = [];
 
@@ -34,10 +40,34 @@ class ChannelsProvider with ChangeNotifier {
 
   Channel findById(int id) => _channels.firstWhere((chan) => chan.id == id);
 
+  void setSyncAlarmsCallback(Future<void> Function() fn) {
+    _syncAlarmsCallback = fn;
+  }
+
+  void setHandler(RadioAudioHandler handler) {
+    _handler = handler;
+
+    _errorSub?.cancel();
+    _errorSub = _handler.errorController.stream.listen((record) {
+      if (!_errorController.isClosed) {
+        _errorController.add(record);
+      }
+    });
+
+    FlutterAlarmBackgroundTrigger().onForegroundAlarmEventHandler((alarms) {
+      final fired = alarms.where((a) => a.status == AlarmStatus.DONE).toList();
+      if (fired.isNotEmpty && !_alarmHandled) _onAlarmItemFired(fired.first);
+    });
+  }
+
   Future<void> initData() async {
+    if (_isInitialized) return;
+    _isInitialized = true;
+
     try {
       await fetchChannels();
     } catch (e) {
+      _isInitialized = false;
       return Future.error(e);
     }
 
@@ -53,11 +83,78 @@ class ChannelsProvider with ChangeNotifier {
     if (data != null) {
       loadedChannel = findById(data);
     } else {
-      loadedChannel = _channels[0]; //set channel to first channel;
+      loadedChannel = _channels[0];
     }
 
-    isPlayingTimer();
+    try {
+      final plugin = FlutterAlarmBackgroundTrigger();
+      final allAlarms = await plugin.getAllAlarms();
+      final handledTime = prefs.getString('_handledAlarmTime');
+      final schedulerEnabled = prefs.getBool('scheduleSwitch') ?? false;
+      final firedAlarms = allAlarms
+          .where((a) =>
+              a.status == AlarmStatus.DONE &&
+              (handledTime == null || a.time?.toIso8601String() != handledTime))
+          .toList();
+      if (schedulerEnabled && firedAlarms.isNotEmpty && !_alarmHandled) {
+        _alarmHandled = true;
+        final alarm = firedAlarms.first;
+        final volume = (prefs.getDouble('scheduleVol') ?? 0.5).clamp(0.0, 1.0);
+        await prefs.setString(
+            '_handledAlarmTime', alarm.time?.toIso8601String() ?? '');
+        try {
+          VolumeController.instance.setVolume(volume);
+        } catch (_) {}
+        await _doSync();
+        _channelIsInit = false;
+        _listenToPlaybackState();
+        notifyListeners();
+        await setChannel(loadedChannel, true);
+        return;
+      }
+    } catch (_) {}
+
+    _listenToPlaybackState();
     notifyListeners();
+  }
+
+  Future<void> _doSync() async {
+    try {
+      if (_syncAlarmsCallback != null) {
+        await _syncAlarmsCallback!();
+      }
+    } catch (_) {}
+  }
+
+  void _onAlarmItemFired(AlarmItem alarm) async {
+    final now = DateTime.now();
+    if (alarm.time != null && now.difference(alarm.time!).inMinutes.abs() > 1) {
+      return;
+    }
+
+    _alarmHandled = true;
+    if (alarm.time != null) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+            '_handledAlarmTime', alarm.time!.toIso8601String());
+      } catch (_) {}
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final volume = (prefs.getDouble('scheduleVol') ?? 0.5).clamp(0.0, 1.0);
+      VolumeController.instance.setVolume(volume);
+    } catch (_) {}
+    try {
+      if (_channelIsInit && play) return;
+      await _doSync();
+      _channelIsInit = false;
+      _listenToPlaybackState();
+      notifyListeners();
+      await setChannel(loadedChannel, true);
+    } catch (e) {
+      _errorController.add((e, StackTrace.current));
+    }
   }
 
   Future<void> fetchChannels() async {
@@ -85,10 +182,10 @@ class ChannelsProvider with ChangeNotifier {
       return;
     }
 
-    if (_player.playing) {
-      _player.pause();
+    if (_handler.player.playing) {
+      _handler.pause();
     } else {
-      _player.play();
+      _handler.play();
     }
   }
 
@@ -99,32 +196,19 @@ class ChannelsProvider with ChangeNotifier {
     loadedChannel = data;
     _channelIsInit = true;
 
-    // Show loading + update channel in UI immediately
     _playerLoading = true;
     notifyListeners();
 
     try {
-      final audioSource = AudioSource.uri(
-        Uri.parse(data.radioUrl),
-        tag: MediaItem(
-          id: data.id.toString(),
-          title: data.title,
-          artUri: Uri.parse(data.imageUrl),
-        ),
-      );
-
-      // setAudioSource is fire-and-forget — live streams block indefinitely if awaited.
-      // Attach catchError so a startup network failure is caught and surfaced to the UI.
-      _player.setAudioSource(audioSource).catchError((Object e, StackTrace st) {
-        _handlePlayerError(e, st, notify: true);
-        return null;
+      await _handler.customAction('setChannel', {
+        'id': data.id.toString(),
+        'title': data.title,
+        'url': data.radioUrl,
+        'imageUrl': data.imageUrl,
+        'autoPlay': (autoPlay || play) ? 'true' : 'false',
       });
-
-      if (autoPlay || play) {
-        _player.play();
-      }
     } catch (e) {
-      _player.stop();
+      _handler.stop();
       _playerLoading = false;
       _setPlayState(false);
       return Future.error(e);
@@ -134,7 +218,6 @@ class ChannelsProvider with ChangeNotifier {
   }
 
   Future<void> moveChannels(int direction) async {
-    // +1 = forward , -1 = backward
     if (_playerLoading) return;
     Channel loaded;
 
@@ -150,34 +233,12 @@ class ChannelsProvider with ChangeNotifier {
     await setChannel(loaded, true);
   }
 
-  /// Resets player state and, when [notify] is true, pushes the error onto
-  /// [errorStream] so the active widget can show a toast.
-  void _handlePlayerError(Object error, StackTrace stackTrace,
-      {bool notify = false}) {
-    debugPrint('[ChannelsProvider] Playback error: $error');
-    debugPrint(stackTrace.toString());
-    _playerLoading = false;
-    play = false;
-    notifyListeners();
-    if (notify && !_errorController.isClosed) {
-      _errorController.add((error, stackTrace));
-    }
-  }
+  void _listenToPlaybackState() {
+    _playbackSub?.cancel();
 
-  void isPlayingTimer() {
-    _playingSub?.cancel();
-    _errorSub?.cancel();
-
-    // Catch stream-level errors (e.g. no internet, stream drop)
-    _errorSub = _player.playbackEventStream.listen(
-      null,
-      onError: _handlePlayerError,
-    );
-
-    // Drive both play and loading state from the player's real-time state
-    _playingSub = _player.playerStateStream.listen((state) {
-      final isLoading = state.processingState == ProcessingState.loading ||
-          state.processingState == ProcessingState.buffering;
+    _playbackSub = _handler.playbackState.listen((state) {
+      final isLoading = state.processingState == AudioProcessingState.loading ||
+          state.processingState == AudioProcessingState.buffering;
       final isPlaying = state.playing;
       if (_playerLoading != isLoading || play != isPlaying) {
         _playerLoading = isLoading;
@@ -189,10 +250,9 @@ class ChannelsProvider with ChangeNotifier {
 
   @override
   void dispose() {
-    _playingSub?.cancel();
+    _playbackSub?.cancel();
     _errorSub?.cancel();
     _errorController.close();
-    _player.dispose();
     super.dispose();
   }
 }

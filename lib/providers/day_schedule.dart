@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-// import 'package:move_to_background/move_to_background.dart';
-import 'package:disable_battery_optimizations_latest/disable_battery_optimizations_latest.dart';
-import 'package:radio_timer_app/services/alarm_service.dart';
+import 'package:disable_battery_optimization/disable_battery_optimization.dart';
+import 'package:flutter_alarm_background_trigger/flutter_alarm_background_trigger.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../services/preference_service.dart';
 import './channels_provider.dart';
@@ -22,7 +23,10 @@ class DaysSchedule with ChangeNotifier {
   double get scheduleVol => _scheduleVol;
   TimeOfDay get selectedTime => _selectedTime;
 
-  final AlarmService _alarmService = AlarmService();
+  final _alarmPlugin = FlutterAlarmBackgroundTrigger();
+
+  /// Reference to [ChannelsProvider] so we can read the loaded channel.
+  ChannelsProvider? _channelsProv;
 
   final List<DayItem> _days = [
     const DayItem(7, 'א', 'Sunday', true),
@@ -37,28 +41,82 @@ class DaysSchedule with ChangeNotifier {
   List<DayItem> get days => [..._days];
 
   Future<void> initData(ChannelsProvider channelsProv) async {
+    _channelsProv = channelsProv;
     await initDataFromPreferences();
-
-    // _alarmService.alarmEventHandler((alarms) async {
-    //   await Future.delayed(const Duration(seconds: 5));
-    //   VolumeController.instance.setVolume(scheduleVol);
-    //   channelsProv.playOrPause(true);
-    //   // MoveToBackground.moveTaskToBack();
-    //   _alarmService.updateAlarms(_days, selectedTime, scheduleSwitch);
-    // });
-
     notifyListeners();
+  }
+
+  /// Convenience to get the loaded channel's alarm-relevant data.
+  Map<String, String> get _channelAlarmData {
+    final ch = _channelsProv?.loadedChannel;
+    return {
+      'channelUrl': ch?.radioUrl ?? '',
+      'channelTitle': ch?.title ?? '',
+      'channelImageUrl': ch?.imageUrl ?? '',
+      'channelId': (ch?.id ?? 0).toString(),
+    };
+  }
+
+  Future<void> syncAlarms() async {
+    await _alarmPlugin.deleteAllAlarms();
+    if (!_scheduleSwitch) return;
+
+    final data = _channelAlarmData;
+    final selectedDays = _days.where((d) => d.selected).toList();
+    final weekdays = _getSelectedWeekdays(_days, selectedTime);
+
+    for (int i = 0; i < weekdays.length; i++) {
+      final alarmId = selectedDays[i].id * 100;
+      await _alarmPlugin.addAlarm(
+        weekdays[i],
+        uid: alarmId.toString(),
+        payload: {
+          'channelId': data['channelId']!,
+          'channelUrl': data['channelUrl']!,
+          'channelTitle': data['channelTitle']!,
+          'channelImageUrl': data['channelImageUrl']!,
+          'volume': _scheduleVol,
+        },
+        screenWakeDuration: const Duration(minutes: 1),
+      );
+    }
+  }
+
+  /// Computes the next DateTime for each selected weekday at [selectedTime].
+  static List<DateTime> _getSelectedWeekdays(
+      List<DayItem> days, TimeOfDay selectedTime) {
+    final List<DateTime> result = [];
+    for (final day in days) {
+      if (!day.selected) continue;
+      final now = DateTime.now();
+      final todayAtTime = DateTime(
+          now.year, now.month, now.day, selectedTime.hour, selectedTime.minute);
+      int daysToAdd = day.id - now.weekday;
+      if (daysToAdd < 0 || (daysToAdd == 0 && !now.isBefore(todayAtTime))) {
+        daysToAdd += 7;
+      }
+      final target = now.add(Duration(days: daysToAdd));
+      result.add(DateTime(target.year, target.month, target.day,
+          selectedTime.hour, selectedTime.minute));
+    }
+    return result;
   }
 
   Future<void> toggleMainSwitch(bool mainSwitch) async {
     final bool permisssion = await backgroundPermissions(mainSwitch);
     if (!permisssion) {
+      // Snap switch back to OFF in the UI so it doesn't appear stuck ON.
+      notifyListeners();
+      Fluttertoast.showToast(
+        msg: 'אשר הרשאות ונסה שוב',
+        toastLength: Toast.LENGTH_LONG,
+      );
       return;
     }
 
     _scheduleSwitch = mainSwitch;
     notifyListeners();
-    await _alarmService.updateAlarms(_days, selectedTime, scheduleSwitch);
+    await syncAlarms();
     await PreferencesService.setBoolPreference(
         preferenceKeys[0], scheduleSwitch);
   }
@@ -68,7 +126,7 @@ class DaysSchedule with ChangeNotifier {
     _days[index] = DayItem(
         id, _days[index].hebName, _days[index].engName, !_days[index].selected);
     notifyListeners();
-    await _alarmService.updateAlarms(_days, selectedTime, scheduleSwitch);
+    await syncAlarms();
 
     await PreferencesService.setBoolPreference(
         'scheduleDays${days[index].id}', days[index].selected);
@@ -79,7 +137,7 @@ class DaysSchedule with ChangeNotifier {
 
     _selectedTime = time;
     notifyListeners();
-    await _alarmService.updateAlarms(_days, selectedTime, scheduleSwitch);
+    await syncAlarms();
     String formattedTime = "${replacingTime.hour}:${replacingTime.minute}";
 
     await PreferencesService.setStringPreference(
@@ -124,17 +182,34 @@ class DaysSchedule with ChangeNotifier {
   }
 
   Future<bool> backgroundPermissions(bool service) async {
+    if (!service) return true; // turning OFF never needs permission
+
     try {
-      if (service) {
-        await DisableBatteryOptimizationLatest
+      // 1. Check Battery Optimization status.
+      bool? isOptimized =
+          await DisableBatteryOptimization.isBatteryOptimizationDisabled;
+      if (isOptimized == false) {
+        await DisableBatteryOptimization
             .showDisableBatteryOptimizationSettings();
-        // final alarmPermission = await _alarmService.requestPermission();
-        // if (!alarmPermission) {
-        //   return false;
-        // }
       }
-      return true;
-    } on Exception {
+
+      // 2. Check System Alert Window permission
+      var overlayStatus = await Permission.systemAlertWindow.status;
+      if (!overlayStatus.isGranted) {
+        await Permission.systemAlertWindow.request();
+      }
+
+      // 3. Check Alarm permission (Android 12+)
+      var alarmStatus = await Permission.scheduleExactAlarm.status;
+      if (!alarmStatus.isGranted) {
+        await Permission.scheduleExactAlarm.request();
+      }
+
+      return (isOptimized ?? false) &&
+          overlayStatus.isGranted &&
+          alarmStatus.isGranted;
+    } on Exception catch (e) {
+      debugPrint('Permission error: $e');
       return false;
     }
   }

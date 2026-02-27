@@ -36,8 +36,6 @@ class UiProvider with ChangeNotifier {
     Object? error,
     StackTrace? stackTrace,
   }) {
-    debugPrint(
-        '[showErrorToast] $text${error != null ? ' | error: $error' : ''}');
     if (stackTrace != null) debugPrint(stackTrace.toString());
     Fluttertoast.showToast(
         msg: text,

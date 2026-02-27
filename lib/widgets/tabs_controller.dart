@@ -9,14 +9,30 @@ import '../providers/day_schedule.dart';
 import '../screens/tabs_screen.dart';
 
 // ignore: must_be_immutable
-class TabsController extends StatelessWidget {
+class TabsController extends StatefulWidget {
   const TabsController({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final channelsProv = context.read<ChannelsProvider>();
-    context.read<DaysSchedule>().initData(channelsProv);
+  State<TabsController> createState() => _TabsControllerState();
+}
 
+class _TabsControllerState extends State<TabsController> {
+  bool _initialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      final channelsProv = context.read<ChannelsProvider>();
+      final daysSchedule = context.read<DaysSchedule>();
+      channelsProv.setSyncAlarmsCallback(daysSchedule.syncAlarms);
+      daysSchedule.initData(channelsProv);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return DefaultTabController(
         length: 2,
         child: Scaffold(

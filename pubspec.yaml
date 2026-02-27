@@ -34,23 +34,22 @@ dependencies:
   provider: ^6.1.5+1
   intl: ^0.20.2
   mini_music_visualizer: ^1.1.4
-  cached_network_image: ^3.3.1
+  cached_network_image: ^3.4.1
   sleek_circular_slider: ^2.1.0
   just_audio: ^0.10.5
-  just_audio_background: ^0.0.1-beta.17
-  http: ^1.5.0
-  volume_controller: ^3.4.0
-  disable_battery_optimizations_latest: ^1.0.0
-  shared_preferences: ^2.5.3
-  # move_to_background:
-  #   git:
-  #     url: https://github.com/RonnieRen/move_to_background.git
-  #     ref: dev
-  equatable: ^2.0.7
-  # flutter_alarm_background_trigger:
-  #  git: https://github.com/Itay-Lavi/flutter_alarm_background_trigger.git
+  audio_service: ^0.18.18
+  http: ^1.6.0
+  volume_controller: ^3.4.2
+  disable_battery_optimization: ^1.1.2
+  shared_preferences: ^2.5.4
+  equatable: ^2.0.8
   flutter_dotenv: ^6.0.0
   fluttertoast: ^9.0.0
+  permission_handler: ^11.3.1
+  flutter_alarm_background_trigger:
+    git: 
+      url: https://github.com/Itay-Lavi/flutter_alarm_background_trigger.git
+      ref: master
 
 dev_dependencies: 
   integration_test:

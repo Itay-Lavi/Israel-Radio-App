@@ -7,7 +7,6 @@ import 'package:mini_music_visualizer/mini_music_visualizer.dart';
 
 import '../../providers/ui_provider.dart';
 import '../../screens/detail_player_screen.dart';
-import '../../models/channel.dart';
 import '../../providers/channels_provider.dart';
 
 class ChannelsBottomPlayer extends StatefulWidget {
