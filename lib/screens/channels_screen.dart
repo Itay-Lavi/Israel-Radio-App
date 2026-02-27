@@ -40,9 +40,11 @@ class ChannelsList extends StatelessWidget {
       }
     }
 
+    final double bottomPadding = 80 + MediaQuery.of(context).padding.bottom;
+
     return uiProvider.viewType == ViewType.list
         ? ListView.builder(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 80),
+            padding: EdgeInsets.fromLTRB(10, 10, 10, bottomPadding),
             itemBuilder: (ctx, i) {
               return ChangeNotifierProvider.value(
                 value: channelsList[i],
@@ -51,7 +53,7 @@ class ChannelsList extends StatelessWidget {
             },
             itemCount: channelsList.length)
         : GridView.builder(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 80),
+            padding: EdgeInsets.fromLTRB(10, 10, 10, bottomPadding),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10),
             itemBuilder: (ctx, i) {
