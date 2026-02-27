@@ -10,7 +10,7 @@ import '../alertdialogs/timer_dialog.dart';
 import '../../providers/day_schedule.dart';
 
 class DetailPlayerAppbar extends StatefulWidget {
-  const DetailPlayerAppbar({Key? key}) : super(key: key);
+  const DetailPlayerAppbar({super.key});
 
   @override
   State<DetailPlayerAppbar> createState() => _DetailPlayerAppbarState();

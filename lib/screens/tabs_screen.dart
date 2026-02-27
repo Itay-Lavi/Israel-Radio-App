@@ -7,16 +7,23 @@ import '../widgets/player/channels_bottom_player.dart';
 import './channels_screen.dart';
 
 class TabsScreen extends StatefulWidget {
-  const TabsScreen({Key? key}) : super(key: key);
+  const TabsScreen({super.key});
 
   @override
   State<TabsScreen> createState() => _TabsScreenState();
 }
 
 class _TabsScreenState extends State<TabsScreen> {
+  late Future<void> _channelsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _channelsFuture = context.read<ChannelsProvider>().initData();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final channelsProv = context.read<ChannelsProvider>();
     return Stack(children: [
       Container(
         decoration: BoxDecoration(
@@ -31,7 +38,7 @@ class _TabsScreenState extends State<TabsScreen> {
         ),
       ),
       FutureBuilder(
-          future: channelsProv.initData(),
+          future: _channelsFuture,
           builder: (ctx, chanSnapShot) {
             if (chanSnapShot.hasError) {
               if (chanSnapShot.error.toString().contains('SocketException')) {

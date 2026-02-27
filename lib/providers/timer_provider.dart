@@ -21,13 +21,14 @@ class TimerProvider with ChangeNotifier {
     mytimer = Timer.periodic(const Duration(seconds: 60), (timer) {
       if (time > 0) {
         time--;
-      } //using else will skip if time gets zero
-      else if (time == 0) {
+      }
+      if (time == 0) {
         timerRunning = false;
         timer.cancel();
         if (channelsProvider.play) {
           channelsProvider.playOrPause();
         }
+        notifyListeners();
       }
     });
   }

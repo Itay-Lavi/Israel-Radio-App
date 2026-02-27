@@ -31,7 +31,12 @@ class UiProvider with ChangeNotifier {
     await PreferencesService.setIntPreference(viewTypeString, viewType.index);
   }
 
-  void showErrorToast([String text = 'שגיאת אינטרנט']) {
+  void showErrorToast({
+    String text = 'שגיאת אינטרנט',
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    if (stackTrace != null) debugPrint(stackTrace.toString());
     Fluttertoast.showToast(
         msg: text,
         toastLength: Toast.LENGTH_SHORT,

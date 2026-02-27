@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:radio_timer_app/providers/ui_provider.dart';
-import 'package:radio_timer_app/widgets/channels/grid_item.dart';
 
 import '../models/channel.dart';
-import '../widgets/channels/list_item.dart';
+import '../providers/ui_provider.dart';
 import '../providers/channels_provider.dart';
+import '../widgets/channels/grid_item.dart';
+import '../widgets/channels/list_item.dart';
 import './detail_player_screen.dart';
 
 class ChannelsList extends StatelessWidget {
   final bool showFavs;
 
-  const ChannelsList(this.showFavs, {Key? key}) : super(key: key);
+  const ChannelsList(this.showFavs, {super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -33,16 +33,18 @@ class ChannelsList extends StatelessWidget {
                 DetailPlayerScreen.routeName,
               );
         }
-      } catch (e) {
-        uiProvider.showErrorToast();
+      } catch (e, st) {
+        uiProvider.showErrorToast(error: e, stackTrace: st);
       } finally {
         channelsProvider.updatePlayerLoading(false);
       }
     }
 
+    final double bottomPadding = 80 + MediaQuery.of(context).padding.bottom;
+
     return uiProvider.viewType == ViewType.list
         ? ListView.builder(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 80),
+            padding: EdgeInsets.fromLTRB(10, 10, 10, bottomPadding),
             itemBuilder: (ctx, i) {
               return ChangeNotifierProvider.value(
                 value: channelsList[i],
@@ -51,7 +53,7 @@ class ChannelsList extends StatelessWidget {
             },
             itemCount: channelsList.length)
         : GridView.builder(
-            padding: const EdgeInsets.fromLTRB(10, 10, 10, 80),
+            padding: EdgeInsets.fromLTRB(10, 10, 10, bottomPadding),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10),
             itemBuilder: (ctx, i) {
