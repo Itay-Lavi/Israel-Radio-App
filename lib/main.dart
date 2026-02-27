@@ -21,9 +21,10 @@ Future<void> main() async {
 
   audioHandler = await AudioService.init(
     builder: () => RadioAudioHandler(),
-    config: AudioServiceConfig(
+    config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.itay.israel_radio.channel.audio',
       androidNotificationChannelName: 'Audio playback',
+      androidNotificationIcon: 'mipmap/launcher_icon',
       androidStopForegroundOnPause: false,
     ),
   );

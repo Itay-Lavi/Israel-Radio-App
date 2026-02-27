@@ -113,6 +113,7 @@ class ChannelsProvider with ChangeNotifier {
         _listenToPlaybackState();
         notifyListeners();
         await setChannel(loadedChannel, true);
+        _moveToBackgroundAfterPlay();
         return;
       }
     } catch (_) {}
@@ -155,9 +156,25 @@ class ChannelsProvider with ChangeNotifier {
       _listenToPlaybackState();
       notifyListeners();
       await setChannel(loadedChannel, true);
+      _moveToBackgroundAfterPlay();
     } catch (e) {
       _errorController.add((e, StackTrace.current));
     }
+  }
+
+  /// Waits for the player to start playing (or 5 s timeout), then moves the
+  /// app to the background so the alarm doesn't leave the screen open.
+  void _moveToBackgroundAfterPlay() {
+    Future(() async {
+      try {
+        await _handler.player.playingStream
+            .firstWhere((playing) => playing)
+            .timeout(const Duration(seconds: 5));
+      } catch (_) {}
+      try {
+        await FlutterAlarmBackgroundTrigger().moveToBackground();
+      } catch (_) {}
+    });
   }
 
   Future<void> fetchChannels() async {

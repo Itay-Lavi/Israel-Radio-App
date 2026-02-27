@@ -35,3 +35,15 @@
 -keepclassmembers class * {
     native <methods>;
 }
+
+# Preserve Generic Signatures for Gson/TypeToken
+-keepattributes Signature
+-keepattributes *Annotation*
+-keepattributes EnclosingMethod
+-keepattributes InnerClasses
+-keep class sun.misc.Unsafe { *; }
+-keep class com.google.gson.** { *; }
+
+# Keep models and plugin classes that might be serialized
+-keep class com.itay.** { *; }
+-keep class **.flutter_alarm_background_trigger.** { *; }

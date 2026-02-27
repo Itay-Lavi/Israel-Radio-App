@@ -48,13 +48,22 @@ class DaysSchedule with ChangeNotifier {
 
   /// Convenience to get the loaded channel's alarm-relevant data.
   Map<String, String> get _channelAlarmData {
-    final ch = _channelsProv?.loadedChannel;
-    return {
-      'channelUrl': ch?.radioUrl ?? '',
-      'channelTitle': ch?.title ?? '',
-      'channelImageUrl': ch?.imageUrl ?? '',
-      'channelId': (ch?.id ?? 0).toString(),
-    };
+    try {
+      final ch = _channelsProv?.loadedChannel;
+      return {
+        'channelUrl': ch?.radioUrl ?? '',
+        'channelTitle': ch?.title ?? '',
+        'channelImageUrl': ch?.imageUrl ?? '',
+        'channelId': (ch?.id ?? 0).toString(),
+      };
+    } catch (_) {
+      return {
+        'channelUrl': '',
+        'channelTitle': '',
+        'channelImageUrl': '',
+        'channelId': '0'
+      };
+    }
   }
 
   Future<void> syncAlarms() async {
@@ -116,9 +125,14 @@ class DaysSchedule with ChangeNotifier {
 
     _scheduleSwitch = mainSwitch;
     notifyListeners();
-    await syncAlarms();
     await PreferencesService.setBoolPreference(
         preferenceKeys[0], scheduleSwitch);
+
+    try {
+      await syncAlarms();
+    } catch (e) {
+      debugPrint('Error syncing alarms: $e');
+    }
   }
 
   Future<void> toggleSelectedDay(int id) async {
@@ -126,10 +140,14 @@ class DaysSchedule with ChangeNotifier {
     _days[index] = DayItem(
         id, _days[index].hebName, _days[index].engName, !_days[index].selected);
     notifyListeners();
-    await syncAlarms();
-
     await PreferencesService.setBoolPreference(
         'scheduleDays${days[index].id}', days[index].selected);
+
+    try {
+      await syncAlarms();
+    } catch (e) {
+      debugPrint('Error syncing alarms: $e');
+    }
   }
 
   Future<void> scheduleTime(TimeOfDay time) async {
@@ -137,11 +155,16 @@ class DaysSchedule with ChangeNotifier {
 
     _selectedTime = time;
     notifyListeners();
-    await syncAlarms();
     String formattedTime = "${replacingTime.hour}:${replacingTime.minute}";
 
     await PreferencesService.setStringPreference(
         preferenceKeys[1], formattedTime);
+
+    try {
+      await syncAlarms();
+    } catch (e) {
+      debugPrint('Error syncing alarms: $e');
+    }
   }
 
   Future<void> sliderScheduleVol(double val) async {
