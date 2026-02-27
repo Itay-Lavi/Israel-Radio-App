@@ -54,6 +54,13 @@ android {
         targetSdk localProperties.getProperty('flutter.targetSdkVersion').toInteger()
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+
+        // Support Android 15 16KB page size requirement
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+            }
+        }
     }
 
     namespace "com.itay.israel_radio"
