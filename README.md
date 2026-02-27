@@ -1,4 +1,4 @@
-# Israel Radio App v2 - Flutter
+# Israel Radio App v2.0.1 - Flutter
 
 ![App Logo](https://play-lh.googleusercontent.com/wt7LWXWYUtA6mfVV5Bs57-I_WJbWRd7Z3mRuvJkmMrG3ShYkaJNnQZVl7OB4z4cG2Q=w240-h480-rw)
 

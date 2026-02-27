@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:volume_controller/volume_controller.dart';
 
 class VolumeSlider extends StatefulWidget {
-  const VolumeSlider({Key? key}) : super(key: key);
+  const VolumeSlider({super.key});
 
   @override
   SliderState createState() => SliderState();
 }
 
 class SliderState extends State<VolumeSlider> {
-  bool _changingVolume = false;
+  bool _userChanging = false;
   double _val = 0.5;
 
   @override
@@ -23,37 +23,27 @@ class SliderState extends State<VolumeSlider> {
   @override
   void initState() {
     super.initState();
-    initVolumeState();
+    _initVolume();
   }
 
-  //init volume_control plugin
-  Future<void> initVolumeState() async {
+  Future<void> _initVolume() async {
     VolumeController.instance.showSystemUI = false;
-
-    //read the current volume
-    final double initVol = await VolumeController.instance.getVolume();
-    _setVol(initVol);
-
-    VolumeController.instance.addListener((volume) async {
-      //listener
-      _setVol(volume);
-    });
+    _updateUi(await VolumeController.instance.getVolume());
+    VolumeController.instance.addListener(_updateUi);
   }
 
-  void _setVol(double volume) async {
-    if (_changingVolume) {
-      return;
-    }
+  void _updateUi(double volume) {
+    if (_userChanging || !mounted) return;
+    setState(() => _val = volume);
+  }
 
-    _changingVolume = true;
-    setState(() {
-      _val = volume;
-    });
-
-    VolumeController.instance.setVolume(volume);
-
-    Future.delayed(const Duration(milliseconds: 70), () {
-      _changingVolume = false;
+  void _onSliderChanged(double value) {
+    if (!mounted) return;
+    _userChanging = true;
+    setState(() => _val = value);
+    VolumeController.instance.setVolume(value);
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) _userChanging = false;
     });
   }
 
@@ -70,13 +60,9 @@ class SliderState extends State<VolumeSlider> {
             child: RotatedBox(
               quarterTurns: 2,
               child: Slider.adaptive(
-                  value: _val,
-                  min: 0,
-                  max: 1,
-                  divisions: 12,
-                  onChanged: (val) {
-                    _setVol(val);
-                  }),
+                value: _val,
+                onChanged: _onSliderChanged,
+              ),
             ),
           ),
           const Icon(Icons.volume_down),
