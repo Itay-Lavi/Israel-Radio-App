@@ -85,7 +85,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             fontFamily: 'Lato',
             iconTheme: const IconThemeData(color: Colors.white),
             colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.indigo)
-                .copyWith(secondary: Colors.white)),
+                .copyWith(secondary: Colors.white),
+            scaffoldBackgroundColor: Colors.black),
         home: const TabsController(),
         routes: {
           DetailPlayerScreen.routeName: (ctx) => const DetailPlayerScreen()
