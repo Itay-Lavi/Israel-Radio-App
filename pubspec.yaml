@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 2.0.1+10
+version: 2.0.3+13
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -36,7 +36,7 @@ dependencies:
   mini_music_visualizer: ^1.1.4
   cached_network_image: ^3.4.1
   sleek_circular_slider: ^2.1.0
-  just_audio: ^0.10.5
+  just_audio: ^0.10.5  # keep up-to-date to get ExoPlayer/media3 fixes for deprecated window APIs
   audio_service: ^0.18.18
   http: ^1.6.0
   volume_controller: ^3.4.2

@@ -87,4 +87,21 @@ flutter {
     source '../..'
 }
 
+// Force a newer media3 version to avoid deprecated setNavigationBarDividerColor /
+// setStatusBarColor / setNavigationBarColor calls present in media3 < 1.5.0
+// (triggered from just_audio's bundled ExoPlayer DRM module).
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.media3:media3-exoplayer:1.5.1'
+        force 'androidx.media3:media3-exoplayer-dash:1.5.1'
+        force 'androidx.media3:media3-exoplayer-hls:1.5.1'
+        force 'androidx.media3:media3-exoplayer-smoothstreaming:1.5.1'
+        force 'androidx.media3:media3-common:1.5.1'
+        force 'androidx.media3:media3-session:1.5.1'
+        force 'androidx.media3:media3-datasource:1.5.1'
+        force 'androidx.media3:media3-decoder:1.5.1'
+        force 'androidx.media3:media3-extractor:1.5.1'
+    }
+}
+
 
