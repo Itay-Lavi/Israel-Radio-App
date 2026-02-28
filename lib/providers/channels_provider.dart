@@ -57,6 +57,7 @@ class ChannelsProvider with ChangeNotifier {
       _setPlayState(false);
     });
 
+    // Re-register the foreground alarm handler.
     FlutterAlarmBackgroundTrigger().onForegroundAlarmEventHandler((alarms) {
       final fired = alarms.where((a) => a.status == AlarmStatus.DONE).toList();
       if (fired.isNotEmpty && !_alarmHandled) _onAlarmItemFired(fired.first);
@@ -90,30 +91,20 @@ class ChannelsProvider with ChangeNotifier {
     }
 
     try {
+      // Cold-start fallback: if the foreground handler missed the event while
+      // the engine was attaching, poll getAllAlarms() for any unhandled DONE alarm.
       final plugin = FlutterAlarmBackgroundTrigger();
       final allAlarms = await plugin.getAllAlarms();
       final handledTime = prefs.getString('_handledAlarmTime');
-      final schedulerEnabled = prefs.getBool('scheduleSwitch') ?? false;
       final firedAlarms = allAlarms
           .where((a) =>
               a.status == AlarmStatus.DONE &&
               (handledTime == null || a.time?.toIso8601String() != handledTime))
           .toList();
-      if (schedulerEnabled && firedAlarms.isNotEmpty && !_alarmHandled) {
-        _alarmHandled = true;
-        final alarm = firedAlarms.first;
-        final volume = (prefs.getDouble('scheduleVol') ?? 0.5).clamp(0.0, 1.0);
-        await prefs.setString(
-            '_handledAlarmTime', alarm.time?.toIso8601String() ?? '');
-        try {
-          VolumeController.instance.setVolume(volume);
-        } catch (_) {}
-        await _doSync();
-        _channelIsInit = false;
+
+      if (firedAlarms.isNotEmpty && !_alarmHandled) {
         _listenToPlaybackState();
-        notifyListeners();
-        await setChannel(loadedChannel, true);
-        _moveToBackgroundAfterPlay();
+        await _onAlarmItemFired(firedAlarms.first);
         return;
       }
     } catch (_) {}
@@ -130,9 +121,11 @@ class ChannelsProvider with ChangeNotifier {
     } catch (_) {}
   }
 
-  void _onAlarmItemFired(AlarmItem alarm) async {
+  Future<void> _onAlarmItemFired(AlarmItem alarm) async {
     final now = DateTime.now();
-    if (alarm.time != null && now.difference(alarm.time!).inMinutes.abs() > 1) {
+    // Allow up to 2 minutes: real-device cold starts in release mode can easily
+    // take over a minute between alarm fire time and initData completing.
+    if (alarm.time != null && now.difference(alarm.time!).inMinutes.abs() > 2) {
       return;
     }
 
@@ -144,12 +137,16 @@ class ChannelsProvider with ChangeNotifier {
             '_handledAlarmTime', alarm.time!.toIso8601String());
       } catch (_) {}
     }
+    // Give AudioService / audio_service a few seconds to fully attach after a
+    // cold start before we try to set volume or start playback.
+    await Future.delayed(const Duration(seconds: 3));
     try {
       final prefs = await SharedPreferences.getInstance();
       final volume = (prefs.getDouble('scheduleVol') ?? 0.5).clamp(0.0, 1.0);
       VolumeController.instance.setVolume(volume);
     } catch (_) {}
     try {
+      // Radio is already playing — nothing to do.
       if (_channelIsInit && play) return;
       await _doSync();
       _channelIsInit = false;
@@ -159,6 +156,10 @@ class ChannelsProvider with ChangeNotifier {
       _moveToBackgroundAfterPlay();
     } catch (e) {
       _errorController.add((e, StackTrace.current));
+    } finally {
+      // Always reset so future alarms in the same process are not blocked.
+      // Per-session dedup is handled by _handledAlarmTime in SharedPreferences.
+      _alarmHandled = false;
     }
   }
 

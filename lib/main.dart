@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_alarm_background_trigger/flutter_alarm_background_trigger.dart';
 
 import './widgets/tabs_controller.dart';
 import '../screens/detail_player_screen.dart';
@@ -16,6 +17,7 @@ late final RadioAudioHandler audioHandler;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FlutterAlarmBackgroundTrigger.initialize();
 
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
