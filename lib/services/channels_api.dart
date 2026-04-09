@@ -1,7 +1,6 @@
-import 'dart:collection';
 import 'dart:convert';
 
-import 'package:flutter/services.dart' show rootBundle; // ← new
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
@@ -10,43 +9,37 @@ import '../models/channel.dart';
 class ChannelsApi {
   static Future<List<Channel>> fetchChannels() async {
     final url = Uri.parse(dotenv.env['RADIO_CHANNELS_URL']!);
-    late Map<String, dynamic> extractedData;
+    late List<dynamic> extractedData;
 
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
-        // fallback on non‑200
-        extractedData = json.decode(response.body) as Map<String, dynamic>;
+        extractedData = json.decode(response.body) as List<dynamic>;
       } else {
         extractedData = await _loadFallback();
       }
-    } catch (e) {
-      // 2) fallback on socket/timeout/etc.
+    } catch (_) {
       extractedData = await _loadFallback();
     }
 
-    // rest unchanged
-    final sortedData = SplayTreeMap.from(
-      extractedData,
-      (a, b) => extractedData[a]['id'].compareTo(extractedData[b]['id']),
-    );
+    final sorted = extractedData
+        .cast<Map<String, dynamic>>()
+        .toList()
+      ..sort((a, b) => (a['id'] as int).compareTo(b['id'] as int));
 
-    return sortedData.entries.map((entry) {
-      final prodData = entry.value as Map<String, dynamic>;
-      final imageUrl =
-          "${dotenv.env['RADIO_IMAGES_URL']! + prodData['imageUrl']}?alt=media";
+    return sorted.map((prodData) {
       return Channel(
-        id: prodData['id'],
-        title: prodData['title'],
-        radioUrl: prodData['radioUrl'],
-        imageUrl: imageUrl,
+        id: prodData['id'] as int,
+        title: prodData['title'] as String,
+        radioUrl: prodData['radioUrl'] as String,
+        imageUrl: prodData['imageUrl'] as String,
       );
     }).toList();
   }
 
-  static Future<Map<String, dynamic>> _loadFallback() async {
+  static Future<List<dynamic>> _loadFallback() async {
     final jsonString =
         await rootBundle.loadString('assets/fallback_channels.json');
-    return json.decode(jsonString) as Map<String, dynamic>;
+    return json.decode(jsonString) as List<dynamic>;
   }
 }
