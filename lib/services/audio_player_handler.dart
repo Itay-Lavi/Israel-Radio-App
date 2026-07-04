@@ -87,17 +87,13 @@ class RadioAudioHandler extends BaseAudioHandler with SeekHandler {
 
     try {
       await _player.stop();
-      _player
-          .setAudioSource(AudioSource.uri(Uri.parse(url)))
-          .catchError((Object e, StackTrace st) {
-        errorController.add((e, st));
-        return null;
-      });
+      await _player.setAudioSource(AudioSource.uri(Uri.parse(url)));
 
       if (autoPlay) {
-        _player.play();
+        await _player.play();
       }
     } catch (e, st) {
+      await _player.stop();
       errorController.add((e, st));
     }
   }
